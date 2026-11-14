@@ -11,6 +11,7 @@
 !/Refinement/
 !/scripts/
 !/docs/
+!/assets/
 !/.github/
 /Refinement/*/
 **/bin/

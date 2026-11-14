@@ -23,7 +23,7 @@ $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (!(Test-Path -LiteralPath $compiler)) { throw 'Install the .NET Framework 4.x development tools (csc.exe is required).' }
 New-Item -ItemType Directory -Path $Output -Force | Out-Null
 $names = 'mscorlib','netstandard','System','System.Core','UnityEngine.CoreModule','UnityEngine.ScriptingModule',
-    'UnityEngine.UIElementsModule','UnityEngine.TextRenderingModule','UnityEngine.TextCoreTextEngineModule',
+    'UnityEngine.UIElementsModule','UnityEngine.TextRenderingModule','UnityEngine.TextCoreTextEngineModule','UnityEngine.ImageConversionModule',
     'UnityEngine.InputLegacyModule','UnityEngine.AudioModule','UnityEngine.Physics2DModule','UnityEngine.AnimationModule','UnityEngine.MathematicsModule',
     'Unity.InputSystem','Unity.RenderPipelines.Core.Runtime','Unity.RenderPipelines.Universal.Runtime','Unity.RenderPipelines.GPUDriven.Runtime'
 $references = $names | ForEach-Object {
@@ -41,6 +41,9 @@ Copy-Item -LiteralPath $CecilPath -Destination (Join-Path $Output 'Mono.Cecil.dl
 if ($LASTEXITCODE) { throw 'Patcher compilation failed.' }
 & (Join-Path $Output 'PatchAssembly.exe') $OriginalAssembly (Join-Path $Output 'RageRefinement.dll') (Join-Path $Output 'Assembly-CSharp.dll')
 if ($LASTEXITCODE) { throw 'Assembly patching failed.' }
+$artwork = Join-Path $Output 'Refinement\Assets'
+New-Item -ItemType Directory -Path $artwork -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $repo 'assets\clay-ui.png') -Destination $artwork -Force
 
 # Keep existing player registrations and register this layer only once.
 $assemblies = Get-Content -LiteralPath (Join-Path $GameData 'ScriptingAssemblies.json') -Raw | ConvertFrom-Json
@@ -68,6 +71,11 @@ if ($Apply) {
         Copy-Item -LiteralPath (Join-Path $GameData $file) -Destination $backup
         Copy-Item -LiteralPath (Join-Path $Output $file) -Destination (Join-Path $GameData $file) -Force
     }
+    $installedArt = Join-Path $GameData 'Refinement\Assets'
+    $previousArt = Join-Path $installedArt 'clay-ui.png'
+    if (Test-Path -LiteralPath $previousArt) { Copy-Item -LiteralPath $previousArt -Destination (Join-Path $backup 'clay-ui.png') }
+    New-Item -ItemType Directory -Path $installedArt -Force | Out-Null
+    Copy-Item -LiteralPath (Join-Path $artwork 'clay-ui.png') -Destination $installedArt -Force
     Write-Host "Installed. Previous files: $backup"
 }
 Write-Host "Build ready: $Output"

@@ -223,13 +223,14 @@ namespace RageRefinement
             card = new VisualElement();
             card.style.width = 460;
             card.style.maxWidth = Length.Percent(94);
-            card.style.paddingTop = 18;
-            card.style.paddingBottom = 20;
-            card.style.paddingLeft = 28;
-            card.style.paddingRight = 28;
+            card.style.paddingTop = 26;
+            card.style.paddingBottom = 28;
+            card.style.paddingLeft = 32;
+            card.style.paddingRight = 32;
             card.style.backgroundColor = Paper;
             SetBorder(card, 5, Accent);
             SetCorners(card, 24);
+            ClayUI.Panel(card);
             overlay.Add(card);
 
             Locale.Changed += RefreshLanguage;
@@ -547,15 +548,11 @@ namespace RageRefinement
             button.style.fontSize = 22;
             button.style.unityFontStyleAndWeight = FontStyle.Bold;
             Color normal = primary ? Clay : (Color)new Color32(246, 216, 163, 255);
-            Color highlight = primary ? (Color)new Color32(249, 145, 110, 255) : (Color)new Color32(255, 245, 216, 255);
             button.style.color = Ink;
             button.style.backgroundColor = normal;
             SetBorder(button, 2, Color.clear);
             SetCorners(button, 10);
-            button.RegisterCallback<PointerEnterEvent>(_ => button.style.backgroundColor = highlight);
-            button.RegisterCallback<PointerLeaveEvent>(_ => button.style.backgroundColor = normal);
-            button.RegisterCallback<FocusInEvent>(_ => SetBorder(button, 2, Ink));
-            button.RegisterCallback<FocusOutEvent>(_ => SetBorder(button, 2, Color.clear));
+            ClayUI.Button(button, primary);
             card.Add(button);
             return button;
         }
@@ -566,11 +563,7 @@ namespace RageRefinement
             element.style.color = Ink;
             SetBorder(element, 2, Accent);
             SetCorners(element, 10);
-            element.RegisterCallback<PointerEnterEvent>(_ =>
-            {
-                if (element is Button) element.style.backgroundColor = (Color)new Color32(255, 245, 216, 255);
-            });
-            element.RegisterCallback<PointerLeaveEvent>(_ => element.style.backgroundColor = Paper);
+            ClayUI.Badge(element);
         }
 
         private static void SetBorder(VisualElement element, int width, Color color)

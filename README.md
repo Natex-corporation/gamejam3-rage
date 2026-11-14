@@ -21,7 +21,7 @@ This repository opens up the **C# refinement layer** for an existing Windows Uni
 
 ## Made to feel at home
 
-The added interface borrows from the game's own dialogue panels: warm paper, orange edging, clay-red buttons, rounded corners, and the original StrawberryMuffins lettering. Pause, settings, language selection, and controls share the same visual language.
+The added interface uses textured plasticine panels and buttons: hand-pressed edges, soft clay shading, warm cream and ochre slabs, coral actions, and leafy green hover and focus states. Pause, settings, HUD badges, language selection, and captions share the same material and the original StrawberryMuffins lettering.
 
 | Pause without losing your place | Make it yours |
 | :---: | :---: |
@@ -34,6 +34,7 @@ The added interface borrows from the game's own dialogue panels: warm paper, ora
 - **Flexible controls:** rebind movement, jump, attack, and interaction; retain arrow keys, mouse attack, and controller support.
 - **A three-stage run:** an adjusted authored climb followed by two generated layouts, with checkpoints and a finish screen.
 - **Runtime fixes:** pause-aware combat and dialogue, input cleanup, and enemy spawn capture after placement.
+- **Screen-bound projectiles:** shots disappear once their collider fully leaves the gameplay camera; offscreen collisions cannot damage unseen targets.
 - **A source-based patcher:** rebuild changes against a verified original assembly without repackaging Unity libraries.
 
 ## Play and controls
@@ -78,6 +79,9 @@ Refinement/                 Runtime C# and the assembly patcher
   Course.cs                 Stages, checkpoints, player tuning
   TitleCaptions.cs          Localized title-button captions
   PatchAssembly.cs          Mono.Cecil integration hooks
+  ClayUI.cs                 Textured, nine-sliced clay surfaces
+  ProjectileBounds.cs       Viewport cleanup and collision bounds
+assets/                     Original clay UI sprite atlas
 scripts/                    Build script and optional visual smoke runner
 docs/                       Build guide, architecture, screenshots
 .github/                    Repository checks and issue templates
@@ -89,6 +93,6 @@ Bug reports, translation corrections, gameplay improvements, and UI polish are w
 
 ## License and project scope
 
-The custom source code and documentation are available under the **[MIT License](LICENSE)**. Screenshots show the existing game for context. The license does not relicense the original game's artwork, audio, fonts, Unity runtime, or other third-party dependencies; see [third-party notices](THIRD_PARTY_NOTICES.md).
+The custom source code, documentation, and newly generated clay UI atlas are available under the **[MIT License](LICENSE)**. Screenshots show the existing game for context. The license does not relicense the original game's artwork, audio, fonts, Unity runtime, or other third-party dependencies; see [third-party notices](THIRD_PARTY_NOTICES.md). The atlas generation prompt and integration notes are in [the artwork guide](docs/ARTWORK.md).
 
 This is a build-compatible refinement project, not a complete Unity Editor checkout. A full game rebuild requires the original `Assets/`, `Packages/`, and `ProjectSettings/`, which are absent from the supplied Windows player folder.

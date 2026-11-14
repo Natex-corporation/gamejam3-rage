@@ -10,5 +10,6 @@ The root MIT license covers the original refinement source, scripts, and documen
 | Mono.Cecil 0.11.6 | External build dependency, distributed by its authors under MIT. Obtain it from the package link in the build guide. |
 | Odin Inspector / Sirenix and other player dependencies | Remain in the separate game installation under their existing licenses; not vendored. |
 | Screenshots under `docs/images/` | Captures of the existing game used to demonstrate the refinement. They are excluded from the source-code MIT grant. |
+| `assets/clay-ui.png` | Newly generated clay UI artwork for this project, shared under the repository's MIT terms. Generation method and prompt are recorded in `docs/ARTWORK.md`. |
 
 For Mono.Cecil attribution and license text, consult the [upstream license](https://github.com/jbevain/cecil/blob/master/LICENSE.txt). Preserve upstream notices when redistributing dependencies yourself.

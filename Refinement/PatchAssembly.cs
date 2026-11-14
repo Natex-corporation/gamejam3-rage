@@ -94,6 +94,11 @@ internal static class PatchAssembly
                 }
 
                 var paused = Import(game, helpers, "get_GameplayPaused");
+                var projectile = game.GetType("Projectile");
+                var outsideView = Import(game, menu.MainModule.GetType("RageRefinement.ProjectileBounds"), "IsOutsideView");
+                CullOffscreenProjectile(Method(projectile, "FixedUpdate"), outsideView, Method(projectile, "Despawn"));
+                // Physics may cross the edge and trigger a hit in the same step.
+                CullOffscreenProjectile(Method(projectile, "OnTriggerEnter2D"), outsideView, Method(projectile, "Despawn"));
                 Guard(Method(game.GetType("Enemy"), "Update"), paused);
                 Guard(Method(game.GetType("Enemy"), "HitboxCheck"), paused);
                 var combat = game.GetType("PlayerCombat");
@@ -137,6 +142,18 @@ internal static class PatchAssembly
         il.InsertBefore(first, il.Create(OpCodes.Call, predicate));
         il.InsertBefore(first, il.Create(OpCodes.Brfalse_S, first));
         il.InsertBefore(first, il.Create(OpCodes.Ret));
+    }
+
+    private static void CullOffscreenProjectile(MethodDefinition method, MethodReference outsideView, MethodReference despawn)
+    {
+        var il = method.Body.GetILProcessor();
+        var entry = method.Body.Instructions[0];
+        il.InsertBefore(entry, il.Create(OpCodes.Ldarg_0));
+        il.InsertBefore(entry, il.Create(OpCodes.Call, outsideView));
+        il.InsertBefore(entry, il.Create(OpCodes.Brfalse_S, entry));
+        il.InsertBefore(entry, il.Create(OpCodes.Ldarg_0));
+        il.InsertBefore(entry, il.Create(OpCodes.Call, despawn));
+        il.InsertBefore(entry, il.Create(OpCodes.Ret));
     }
 
     private static void LocalizeDialogue(ModuleDefinition game, ModuleDefinition menu, TypeDefinition dialogue)

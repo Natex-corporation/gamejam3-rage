@@ -59,6 +59,9 @@ namespace RageBench
             // Let the player's startup splash finish before capturing the title UI.
             yield return new WaitForSecondsRealtime(7f);
             var menu = FindAnyObjectByType<GameMenu>();
+            // Capture menus with the game's scene camera so player screenshots include UI rendering.
+            SceneManager.LoadScene(1);
+            yield return new WaitForSecondsRealtime(.5f);
             var languageField = typeof(Locale).GetField("language", BindingFlags.Static | BindingFlags.NonPublic);
             var events = typeof(Locale).GetField("Changed", BindingFlags.Static | BindingFlags.NonPublic);
             foreach (int width in new[] {1280, 800, 1024})
@@ -109,6 +112,8 @@ namespace RageBench
             SceneManager.LoadScene(2);
             yield return new WaitForSecondsRealtime(.8f);
             yield return Capture("course");
+            yield return ProjectileChecks.Run();
+            failures += ProjectileChecks.Failures;
             Debug.Log("SMOKE complete; failures=" + failures);
             Application.Quit(failures == 0 ? 0 : 1);
         }

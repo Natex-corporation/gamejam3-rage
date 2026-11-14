@@ -25,6 +25,8 @@ flowchart LR
 | `Course.cs` | Three-stage progression, generated placement, checkpoints, health and jump tuning |
 | `TitleCaptions.cs` | Localized captions over the game's title controls |
 | `PatchAssembly.cs` | Explicit IL hooks into the original game types and input lifecycle |
+| `ClayUI.cs` | Runtime atlas loading, nine-slice clay surfaces, hover/focus/press states |
+| `ProjectileBounds.cs` | Gameplay camera bounds for projectile cleanup and collision rejection |
 
 ## Pause contract
 
@@ -36,7 +38,11 @@ Dialogue translations are keyed by the original trimmed line. Unknown text falls
 
 ## Visual direction
 
-Use the existing clay village and dialogue panels as visual authority. Shared menu colors are cream paper `#FCEABE`, brown ink `#4F301D`, orange edging `#E8A64D`, and clay red `#EF6C56`. Reuse the original handwritten font and rounded paper shapes. Keep focus visible and check compact layouts with the longest translations.
+Use the existing clay village as visual authority. Added surfaces use the actual textured atlas in `assets/clay-ui.png`, with cream and ochre plasticine, coral actions, and leafy green interaction states. Brown ink `#4F301D` and the original handwritten font keep text readable. Nine-slicing preserves the hand-pressed corners at different menu sizes. The older solid-color styling is a fallback if artwork cannot load. Keep focus visible and check compact layouts with the longest translations.
+
+## Projectile boundary contract
+
+Both `Projectile.FixedUpdate` and `Projectile.OnTriggerEnter2D` are patched to test the collider bounds against the gameplay camera. Once the whole shot leaves any viewport edge, the original `Despawn` method marks it spent and schedules destruction. The collision hook prevents an offscreen hit during the same physics step that crosses the screen edge. Partially visible shots and onscreen damage retain their normal behavior. The original lifetime still handles shots if no gameplay camera is available.
 
 ## Patching boundaries
 

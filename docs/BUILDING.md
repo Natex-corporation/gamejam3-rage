@@ -30,13 +30,13 @@ Run from the repository root:
   -CecilPath 'C:\Tools\Mono.Cecil\lib\net40\Mono.Cecil.dll'
 ```
 
-The `build/` directory contains the refinement DLL, patched game DLL, updated runtime registration manifests, and local patcher tools. Existing entries in the game's manifests are preserved. No game art or engine files are copied into the source repository.
+The `build/` directory contains the refinement DLL, patched game DLL, updated runtime registration manifests, local patcher tools, and the atlas under `Refinement/Assets/`. Existing entries in the game's manifests are preserved. No original game art or engine files are copied into the source repository.
 
 ## Install and undo
 
 Close the game and repeat the command with `-Apply`. The script saves the current DLLs and both registration manifests to a timestamped `Refinement/Backups/` folder inside the supplied game data directory before replacing them.
 
-To undo, close the game, copy the backed-up `Assembly-CSharp.dll` and `RageRefinement.dll` (if present) into `Managed/`, and restore both JSON files to the game data root. If the backup had no refinement DLL, the restored manifests no longer reference it, and you may remove that extra DLL.
+To undo, close the game, copy the backed-up `Assembly-CSharp.dll` and `RageRefinement.dll` (if present) into `Managed/`, and restore both JSON files to the game data root. Restore `clay-ui.png` to `Refinement/Assets/` if it exists in the backup. If the backup had no refinement DLL, the restored manifests no longer reference it, and you may remove that extra DLL.
 
 Build a fresh source checkout against your own installation. The original game files, historical local backups, compiled DLLs, and generated outputs are ignored by Git.
 
@@ -44,7 +44,7 @@ Build a fresh source checkout against your own installation. The original game f
 
 Check the title, options, controls, languages, confirmations, pause, and course finish. Use all four languages at 1280×720, 800×600, and 1024×480. Verify keyboard focus, hover, controller navigation, rebinding, and pause/resume during conversation and combat.
 
-`scripts/VisualSmoke.cs` is an optional Unity runtime integration runner used for layout checks and screenshots. It requires a **disposable complete player copy**, compilation against that player's Unity DLLs and `RageRefinement.dll`, and registration of `RageBench.Runner.StartBenchmark` in the copy's runtime manifests. It walks three menu screens across all four languages and three resolutions, verifies pause/resume, writes screenshots beside the copied executable, and exits nonzero on layout failures. Do not register it in your everyday game installation.
+`scripts/VisualSmoke.cs` and `scripts/ProjectileChecks.cs` form an optional Unity runtime integration runner for layout checks, screenshots, and projectile regressions. Compile both against the disposable player's Unity DLLs, `Assembly-CSharp.dll`, and `RageRefinement.dll`; register `RageBench.Runner.StartBenchmark` in that copy's runtime manifests. Copy the built `Refinement/Assets/` directory into the copied game data folder. The runner walks three menu screens across four languages and three resolutions, verifies pause/resume, and checks projectile cleanup at every edge, partial visibility, camera movement, moving-shot destruction, and onscreen versus offscreen damage. It writes screenshots beside the copied executable and exits nonzero on failures. Do not register it in your everyday game installation.
 
 The hosted repository check validates PowerShell syntax and repository documentation. Building and runtime verification require local game files and are not performed by hosted CI.
 
