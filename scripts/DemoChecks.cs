@@ -99,7 +99,7 @@ namespace RageBench
             Expect(boss!=null && boss.Health.MaxHealth==280,"final district has the 280-health Kiln King");
             var player=FindAnyObjectByType<PlayerController>();
             var body=player.GetComponent<Rigidbody2D>();
-            float floor=boss.GetComponent<Collider2D>().bounds.min.y;
+            float floor=boss.GetComponents<Collider2D>().First(c=>c.enabled).bounds.min.y;
             player.transform.position=new Vector3(boss.transform.position.x-13,floor+1.08f,0);
             body.linearVelocity=Vector2.zero;
             Physics2D.SyncTransforms();
@@ -110,6 +110,7 @@ namespace RageBench
             int hearts=player.GetComponent<Health>().CurrentHealth, shells=Progression.Shields;
             InputSystem.QueueStateEvent(keyboard,new KeyboardState(Key.LeftShift));
             InputSystem.Update();
+            Debug.Log("DEMO dash input="+keyboard.leftShiftKey.wasPressedThisFrame+" control="+player.HasControl+" blocked="+GameMenu.BlockGameplayInput+" rank="+Progression.ActiveRank(4)+" active="+Progression.RunActive);
             typeof(PlayerTricks).GetMethod("Update",Hidden).Invoke(player.GetComponent<PlayerTricks>(),null);
             Expect(PlayerTricks.Dashing,"Shift triggers the purchased dash");
             Hurt(player.GetComponent<Health>(),1,Vector2.zero);
