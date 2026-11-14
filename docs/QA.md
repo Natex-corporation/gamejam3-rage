@@ -6,7 +6,9 @@ Verified on 2026-11-14 with Unity 6000.6.6f1 on Windows. Runtime suites use isol
 
 The runner completed the village conversations and all six districts, defeated the two-phase Kiln King, cleared its reinforcements, and reached victory using Input System keyboard events. It moved, jumped, attacked, dashed, entered exits, and bought upgrades through the workshop UI. It did not grant currency, teleport, change enemy health, or force completion.
 
-Recorded result: **360 seconds, three defeats, 60 enemies defeated, 44 total damage received**. The first attempt ended after three kills with 58 clay; the player bought damage and health. Later attempts bought body buffs and tricks and resumed unlocked districts. This is an automated regression result, not a measured human playtime or a promise of demo length.
+Recorded result: **347 seconds, three defeats, 58 enemies defeated, 53 total damage received**. The first attempt ended after three kills with 58 clay; the player bought damage and health. Later attempts bought body buffs and tricks and resumed unlocked districts. This is an automated regression result, not a measured human playtime or a promise of demo length.
+
+This final expedition ran after the boss draw-layer/collider and generated-exit fixes, against release source commit `9e74ec6896811ae95598dacec0a1cddf0e6af7ac`.
 
 ## Regression coverage
 
