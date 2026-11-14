@@ -34,6 +34,28 @@ internal static class PatchAssembly
 
                 var course = menu.MainModule.GetType("RageRefinement.Course");
                 var health = game.GetType("Health");
+                var progression = menu.MainModule.GetType("RageRefinement.Progression");
+                var healthStart = Method(health, "Start");
+                var startIL = healthStart.Body.GetILProcessor();
+                var startEntry = healthStart.Body.Instructions[0];
+                startIL.InsertBefore(startEntry, startIL.Create(OpCodes.Ldarg_0));
+                startIL.InsertBefore(startEntry, startIL.Create(OpCodes.Call, Import(game, progression, "TrackHealth")));
+                var damage = Method(health, "TakeDamage");
+                var damageIL = damage.Body.GetILProcessor();
+                var damageEntry = damage.Body.Instructions[0];
+                damageIL.InsertBefore(damageEntry, damageIL.Create(OpCodes.Ldarg_0));
+                damageIL.InsertBefore(damageEntry, damageIL.Create(OpCodes.Ldarg_1));
+                damageIL.InsertBefore(damageEntry, damageIL.Create(OpCodes.Call, Import(game, progression, "AdjustDamage")));
+                damageIL.InsertBefore(damageEntry, damageIL.Create(OpCodes.Starg, damage.Parameters[0]));
+                ReplaceCalls(Method(game.GetType("PlayerHealthReceiver"), "HandleDeath"), "UnityEngine.SceneManagement.SceneManager",
+                    "LoadScene", Import(game, progression, "HandleDefeat"), 1);
+                var startJourney = Method(game.GetType("MainMenuController"), "OnStartClicked");
+                startJourney.Body.Instructions.Clear();
+                startJourney.Body.ExceptionHandlers.Clear();
+                startJourney.Body.Variables.Clear();
+                var journeyIL = startJourney.Body.GetILProcessor();
+                journeyIL.Emit(OpCodes.Call, Import(game, helpers, "StartJourney"));
+                journeyIL.Emit(OpCodes.Ret);
                 var healthAwake = Method(health, "Awake");
                 var healthIL = healthAwake.Body.GetILProcessor();
                 var healthEntry = healthAwake.Body.Instructions[0];
@@ -69,6 +91,9 @@ internal static class PatchAssembly
                 var nameLabel = dialogue.Fields.Single(field => field.Name == "_speakerNameLabel");
                 AttachAtReturn(Method(dialogue, "ApplySpeaker"), nameLabel, Import(game, helpers, "StyleSpeakerName"));
                 var title = Method(game.GetType("MainMenuController"), "Awake");
+                var hud = game.GetType("PlayerHUDController");
+                AttachAtReturn(Method(hud, "InitializeHearts"), hud.Fields.Single(field => field.Name == "_heartContainer"),
+                    Import(game, helpers, "StyleHearts"));
                 var progress = game.GetType("DialogueProgress");
                 var resetProgress = Method(progress, "Restore");
                 var mark = Method(progress, "MarkCompleted");
@@ -94,6 +119,7 @@ internal static class PatchAssembly
                 }
 
                 var paused = Import(game, helpers, "get_GameplayPaused");
+                Guard(damage, paused);
                 var projectile = game.GetType("Projectile");
                 var outsideView = Import(game, menu.MainModule.GetType("RageRefinement.ProjectileBounds"), "IsOutsideView");
                 CullOffscreenProjectile(Method(projectile, "FixedUpdate"), outsideView, Method(projectile, "Despawn"));

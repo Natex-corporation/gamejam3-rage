@@ -10,6 +10,8 @@ namespace RageRefinement
         // Source, Czech override, English, Slovak, German. Null keeps the original Czech.
         private static readonly string[,] Lines =
         {
+            { "uGHrrr..", "Ugh...", "Ugh...", "Ugh...", "Uff..." },
+            { "aAAahhh..", "Ááá...", "Aaah...", "Ááá...", "Aaah..." },
             { "A víte co mě to ani nezajíma!", "A víte co? Mě to ani nezajímá!", "You know what? I don't even care!", "A viete čo? Ani ma to nezaujíma!", "Wissen Sie was? Es ist mir völlig egal!" },
             { "Ahoj, já jsem Hnoop, jsem tu nový. Jak se jmenujete vy?", null, "Hi, I'm Hnoop. I'm new here. What's your name?", "Ahoj, ja som Hnoop, som tu nový. Ako sa voláte vy?", "Hallo, ich bin Hnoop und neu hier. Wie heißen Sie?" },
             { "Ale proč ne? Vždyť jsme sousedé a až se potkáme u popelnic, tak je blbé abych vás oslovoval: Hej ty hlíno! A kde tu bydlíte?", null, "Why not? We're neighbors. I can't just shout, ‘Hey, clayface!’ when we meet by the trash cans. Where do you live?", "Prečo nie? Veď sme susedia. Keď sa stretneme pri smetiakoch, nemôžem len tak zvolať: „Hej, ty hruda hliny!“ Kde bývate?", "Warum nicht? Wir sind doch Nachbarn. An der Mülltonne kann ich schlecht »Hey, du Tonklumpen!« rufen. Wo wohnen Sie denn?" },

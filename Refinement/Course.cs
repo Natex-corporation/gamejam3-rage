@@ -29,9 +29,15 @@ namespace RageRefinement
 
         public static void ConfigurePlayerHealth(Component health, ref int maximum, ref float invincibility)
         {
-            if (!health.CompareTag("Player")) return;
-            maximum = Mathf.Max(maximum, 7);
-            invincibility = Mathf.Max(invincibility, 0.8f);
+            Progression.ConfigureHealth(health, ref maximum, ref invincibility);
+        }
+
+        public static void BeginRun()
+        {
+            Stage = 0;
+            checkpointReached = false;
+            Finished = false;
+            seed = Guid.NewGuid().GetHashCode();
         }
 
         public static float JumpVelocity(float original)
@@ -94,11 +100,18 @@ namespace RageRefinement
             if (!collider.CompareTag("Player") || SceneManager.GetActiveScene().buildIndex != LevelScene)
                 return false;
             if (changingScene || Finished) return true;
+            if (!Progression.RunActive) return true;
+            if (Progression.EnemiesRemaining > 0)
+            {
+                GameMenu.ShowLockedExit();
+                return true;
+            }
+            Progression.StageCleared();
 
             if (Stage + 1 == StageCount)
             {
                 Finished = true;
-                GameMenu.ShowFinish();
+                Progression.EndRun(true);
             }
             else
             {
@@ -115,7 +128,7 @@ namespace RageRefinement
             var position = player.position;
             if (position.y < -22f)
             {
-                ReloadStage();
+                Progression.EndRun(false);
                 return false;
             }
             if (!shelfReady || checkpointReached || position.x < checkpoint.x || position.y < shelfTop + 0.85f

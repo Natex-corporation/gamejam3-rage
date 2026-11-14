@@ -44,7 +44,19 @@ Build a fresh source checkout against your own installation. The original game f
 
 Check the title, options, controls, languages, confirmations, pause, and course finish. Use all four languages at 1280×720, 800×600, and 1024×480. Verify keyboard focus, hover, controller navigation, rebinding, and pause/resume during conversation and combat.
 
-`scripts/VisualSmoke.cs` and `scripts/ProjectileChecks.cs` form an optional Unity runtime integration runner for layout checks, screenshots, and projectile regressions. Compile both against the disposable player's Unity DLLs, `Assembly-CSharp.dll`, and `RageRefinement.dll`; register `RageBench.Runner.StartBenchmark` in that copy's runtime manifests. Copy the built `Refinement/Assets/` directory into the copied game data folder. The runner walks three menu screens across four languages and three resolutions, verifies pause/resume, and checks projectile cleanup at every edge, partial visibility, camera movement, moving-shot destruction, and onscreen versus offscreen damage. It writes screenshots beside the copied executable and exits nonzero on failures. Do not register it in your everyday game installation.
+After building, the reusable QA launcher makes a separate complete player copy, compiles and registers its test runner, copies the clay artwork, and launches with a separate progression profile:
+
+```powershell
+.\scripts\run-qa.ps1 -Suite Smoke -GameData 'C:\Games\Rage\GameJam3_Rage_Data' -Profile smoke
+.\scripts\run-qa.ps1 -Suite SaveProbe -GameData 'C:\Games\Rage\GameJam3_Rage_Data' -Profile smoke
+.\scripts\run-qa.ps1 -Suite Playthrough -GameData 'C:\Games\Rage\GameJam3_Rage_Data' -Profile fresh-playthrough
+```
+
+The smoke suite checks four menu screens in four languages and three resolutions, result and workshop layouts, fifteen-heart wrapping, projectile cleanup and damage, purchase costs, insufficient funds, caps, saved currency, next-run effects, shells, healing, stage gates, and enemies falling below the level. `SaveProbe` launches a new process and compares the smoke profile with the value saved by the previous process. Use the same profile for those two suites.
+
+The playthrough suite uses Input System keyboard events to finish the village conversations, fight enemies, jump between platforms, buy affordable buffs through the workshop UI after defeat, and reach the ending. It does not grant currency, teleport the player, change enemy health, or force stage completion. Use a new profile name for a genuinely fresh start. The smoke suite does use controlled damage and scene transitions to test specific regressions; it is separate from the playthrough.
+
+Logs and screenshots are written below `build/qa-<suite>/`. Do not register these runners in your everyday game installation. The ordinary player's progression key is never used by this launcher.
 
 The hosted repository check validates PowerShell syntax and repository documentation. Building and runtime verification require local game files and are not performed by hosted CI.
 

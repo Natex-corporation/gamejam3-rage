@@ -15,9 +15,9 @@
 
 </div>
 
-Meet Hnoop, the new neighbor in a handmade clay village. Try a conversation. Lose your patience. Then jump, kick, and charge your way through a three-stage platforming course.
+Meet Hnoop, the new neighbor in a handmade clay village. Try a conversation. Lose your patience. Then fight, earn clay, reshape yourself in the workshop, and come back stronger for a three-stage platforming run.
 
-This repository opens up the **C# refinement layer** for an existing Windows Unity game: its menus, translations, keyboard remapping, generated stages, checkpoints, and assembly patcher. The original Unity Editor project and game assets are not included. You need a compatible copy of the game to build or play with these changes.
+This repository opens up the **C# refinement layer** for an existing Windows Unity game: its incremental progression, menus, translations, keyboard remapping, generated stages, checkpoints, and assembly patcher. The original Unity Editor project and game assets are not included. You need a compatible copy of the game to build or play with these changes.
 
 ## Made to feel at home
 
@@ -32,14 +32,15 @@ The added interface uses textured plasticine panels and buttons: hand-pressed ed
 - **Pause and options:** resume, retry, return to title, graphics presets, and window mode.
 - **Four languages:** Czech, English, Slovak, and German, including dialogue and control hints.
 - **Flexible controls:** rebind movement, jump, attack, and interaction; retain arrow keys, mouse attack, and controller support.
-- **A three-stage run:** an adjusted authored climb followed by two generated layouts, with checkpoints and a finish screen.
+- **Incremental runs:** saved clay, four permanent buff paths, defeat results, and workshop purchases for the next attempt.
+- **A three-stage run:** an authored climb followed by two generated layouts, healing rest points, enemy-clear exits, and a victory screen.
 - **Runtime fixes:** pause-aware combat and dialogue, input cleanup, and enemy spawn capture after placement.
 - **Screen-bound projectiles:** shots disappear once their collider fully leaves the gameplay camera; offscreen collisions cannot damage unseen targets.
 - **A source-based patcher:** rebuild changes against a verified original assembly without repackaging Unity libraries.
 
 ## Play and controls
 
-Launch `GameJam3_Rage.exe` from your existing game installation. Open **Options** or press **Esc** to change language, controls, or graphics. The title menu also offers a shortcut to the generated stages.
+Launch `GameJam3_Rage.exe` from your existing game installation. The first game includes the village story; later runs start directly on the course. Open **Options** or press **Esc** for the workshop, language, controls, and graphics.
 
 | Action | Keyboard / mouse | Controller |
 | --- | --- | --- |
@@ -50,7 +51,22 @@ Launch `GameJam3_Rage.exe` from your existing game installation. Open **Options*
 | Talk / continue | E | Y |
 | Pause / resume | Esc | Start |
 
-Keyboard assignments can be changed in **Options → Controls**. Language, key assignments, graphics, and display settings persist locally. Course progress is held for the current run.
+Keyboard assignments can be changed in **Options → Controls**. Language, key assignments, graphics, and display settings persist locally. Earned clay and purchased buffs are saved immediately and survive defeat and quitting. Stage progress and unused shell charges belong to the current run.
+
+## Earn, reshape, repeat
+
+Fresh players start with **three hearts** against enemies with **8 / 14 / 20 health** across the three stages. Every point of enemy health removed earns one clay; defeats and cleared stages award extra. Defeat keeps your wallet and opens the workshop. All enemies must be defeated before a stage exit opens.
+
+| Permanent buff | Effect | Ranks |
+| --- | --- | --- |
+| Stronger kicks | +1 damage per hit per rank, including projectiles | 8 |
+| More hearts | +2 maximum hearts per rank | 6 |
+| Clay shell | Block one incoming hit per rank per run | 4 |
+| Second wind | Heal one heart every 3 / 2 / 1 defeated enemies | 3 |
+
+Purchases take effect on the **next run**, and prices rise with each rank. You can inspect or buy buffs from the pause menu, too. See [the progression guide](docs/PROGRESSION.md) for the economy and save behavior.
+
+![The clay workshop and permanent buffs](docs/images/workshop.png)
 
 ## Build from source
 
@@ -72,7 +88,7 @@ This builds into `build/`. Add `-Apply` to install into the supplied game folder
 
 ```text
 Refinement/                 Runtime C# and the assembly patcher
-  GameMenu.cs               Pause, settings, shared paper styling
+  GameMenu.cs               Pause, workshop, results, shared clay styling
   Locale.cs                 UI language selection and translations
   DialogueTranslations.cs   Dialogue localization and live refresh
   KeyboardBindings.cs       Persistent keyboard overrides
@@ -81,6 +97,7 @@ Refinement/                 Runtime C# and the assembly patcher
   PatchAssembly.cs          Mono.Cecil integration hooks
   ClayUI.cs                 Textured, nine-sliced clay surfaces
   ProjectileBounds.cs       Viewport cleanup and collision bounds
+  Progression.cs            Persistent clay, purchases, rewards, run lifecycle
 assets/                     Original clay UI sprite atlas
 scripts/                    Build script and optional visual smoke runner
 docs/                       Build guide, architecture, screenshots

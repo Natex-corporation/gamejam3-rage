@@ -23,7 +23,7 @@ $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (!(Test-Path -LiteralPath $compiler)) { throw 'Install the .NET Framework 4.x development tools (csc.exe is required).' }
 New-Item -ItemType Directory -Path $Output -Force | Out-Null
 $names = 'mscorlib','netstandard','System','System.Core','UnityEngine.CoreModule','UnityEngine.ScriptingModule',
-    'UnityEngine.UIElementsModule','UnityEngine.TextRenderingModule','UnityEngine.TextCoreTextEngineModule','UnityEngine.ImageConversionModule',
+    'UnityEngine.UIElementsModule','UnityEngine.TextRenderingModule','UnityEngine.TextCoreTextEngineModule','UnityEngine.ImageConversionModule','UnityEngine.JSONSerializeModule',
     'UnityEngine.InputLegacyModule','UnityEngine.AudioModule','UnityEngine.Physics2DModule','UnityEngine.AnimationModule','UnityEngine.MathematicsModule',
     'Unity.InputSystem','Unity.RenderPipelines.Core.Runtime','Unity.RenderPipelines.Universal.Runtime','Unity.RenderPipelines.GPUDriven.Runtime'
 $references = $names | ForEach-Object {

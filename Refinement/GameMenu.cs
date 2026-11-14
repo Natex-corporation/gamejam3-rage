@@ -39,6 +39,10 @@ namespace RageRefinement
         private Button shortcut;
         private Button languageShortcut;
         private Label stageLabel;
+        private Label clayLabel;
+        private bool showingWorkshop;
+        private float nextWorldRefresh;
+        private float lockedExitUntil;
         private int nextNeighbor;
         private bool showingControls;
         private bool showingLanguages;
@@ -81,6 +85,47 @@ namespace RageRefinement
         {
             if (instance == null) return;
             instance.OpenMenu();
+        }
+
+        public static void ShowRunResult()
+        {
+            if (instance == null) return;
+            if (!instance.isOpen) instance.OpenMenu();
+            else instance.ShowActions();
+        }
+
+        public static void StartJourney()
+        {
+            if (instance == null) return;
+            instance.StartRun(!Progression.StorySeen);
+        }
+
+        private void StartRun(bool story)
+        {
+            Progression.BeginRun();
+            Course.BeginRun();
+            LoadScene(story ? 1 : Course.LevelScene);
+        }
+
+        public static void ShowLockedExit()
+        {
+            if (instance == null) return;
+            instance.lockedExitUntil = Time.unscaledTime + 3f;
+            instance.stageLabel.text = string.Format(Locale.UI("Defeat {0} more enemies to open the exit."), Progression.EnemiesRemaining);
+        }
+
+        public static void StyleHearts(VisualElement container)
+        {
+            if (container == null) return;
+            container.style.width = 480;
+            container.style.maxWidth = Length.Percent(40);
+            container.style.flexWrap = Wrap.Wrap;
+            foreach (var heart in container.Children())
+            {
+                heart.style.width = 48;
+                heart.style.height = 52;
+                heart.style.marginLeft = heart.style.marginRight = 2;
+            }
         }
 
         public static void OnConversationCompleted(string id)
@@ -195,6 +240,8 @@ namespace RageRefinement
             stageLabel.style.position = Position.Absolute;
             stageLabel.style.right = 28;
             stageLabel.style.top = 24;
+            stageLabel.style.maxWidth = Length.Percent(54);
+            stageLabel.style.whiteSpace = WhiteSpace.Normal;
             stageLabel.style.backgroundColor = Ink;
             stageLabel.style.paddingLeft = 12;
             stageLabel.style.paddingRight = 12;
@@ -203,6 +250,16 @@ namespace RageRefinement
             StylePaperBadge(stageLabel);
             stageLabel.pickingMode = PickingMode.Ignore;
             root.Add(stageLabel);
+
+            clayLabel = Text("", 19, Ink);
+            clayLabel.style.position = Position.Absolute;
+            clayLabel.style.left = 24;
+            clayLabel.style.bottom = 22;
+            clayLabel.style.paddingLeft = clayLabel.style.paddingRight = 14;
+            clayLabel.style.paddingTop = clayLabel.style.paddingBottom = 8;
+            clayLabel.pickingMode = PickingMode.Ignore;
+            StylePaperBadge(clayLabel);
+            root.Add(clayLabel);
 
             overlay = new VisualElement();
             overlay.style.position = Position.Absolute;
@@ -234,6 +291,7 @@ namespace RageRefinement
             overlay.Add(card);
 
             Locale.Changed += RefreshLanguage;
+            Progression.Changed += RefreshProgress;
             SceneManager.activeSceneChanged += OnSceneChanged;
             OnSceneChanged(default(Scene), SceneManager.GetActiveScene());
             CloseMenu();
@@ -242,6 +300,7 @@ namespace RageRefinement
         private void OnDestroy()
         {
             Locale.Changed -= RefreshLanguage;
+            Progression.Changed -= RefreshProgress;
             SceneManager.activeSceneChanged -= OnSceneChanged;
             ReleasePause();
             if (panelSettings != null) Destroy(panelSettings);
@@ -252,6 +311,12 @@ namespace RageRefinement
         {
             if (loading) return;
             if (!paused && Course.UpdateProgress()) ShowStageObjective();
+            if (!paused && Time.unscaledTime >= nextWorldRefresh)
+            {
+                nextWorldRefresh = Time.unscaledTime + .25f;
+                Progression.UpdateWorld();
+                if (SceneManager.GetActiveScene().buildIndex == Course.LevelScene) ShowStageObjective();
+            }
             var keyboard = Keyboard.current;
             var pad = Gamepad.current;
             if (bindingIndex >= 0 && keyboard != null && Time.frameCount > bindingFrame)
@@ -266,9 +331,9 @@ namespace RageRefinement
                 || (pad != null && pad.startButton.wasPressedThisFrame);
             if (toggle || (isOpen && pad != null && pad.buttonEast.wasPressedThisFrame))
             {
-                if (confirmedAction != null || showingControls || showingLanguages)
+                if (confirmedAction != null || showingControls || showingLanguages || showingWorkshop)
                     ShowActions();
-                else if (isOpen && !Course.Finished)
+                else if (isOpen && !Course.Finished && !Progression.RunEnded)
                     CloseMenu();
                 else if (!isOpen)
                     OpenMenu();
@@ -277,7 +342,9 @@ namespace RageRefinement
 
         private void OnSceneChanged(Scene previous, Scene current)
         {
+            lockedExitUntil = 0;
             Course.OnSceneChanged(current);
+            Progression.SceneChanged(previous, current);
             inGame = current.buildIndex > 0;
             if (inGame) TitleCaptions.Clear();
             bool intro = current.buildIndex == 1;
@@ -287,6 +354,7 @@ namespace RageRefinement
             shortcut.style.right = intro ? (StyleLength)StyleKeyword.Auto : 24f;
             RefreshLanguage();
             stageLabel.style.display = inGame ? DisplayStyle.Flex : DisplayStyle.None;
+            clayLabel.style.display = current.buildIndex == Course.LevelScene ? DisplayStyle.Flex : DisplayStyle.None;
             if (current.buildIndex == 1)
             {
                 nextNeighbor = 0;
@@ -297,12 +365,25 @@ namespace RageRefinement
             loading = false;
             CloseMenu();
             ApplyGraphics();
+            RefreshProgress();
         }
 
         private void ShowStageObjective()
         {
+            if (Time.unscaledTime < lockedExitUntil) return;
             string stage = string.Format(Locale.UI("Stage {0} / {1}"), Course.Stage + 1, Course.StageCount);
-            stageLabel.text = stage + "   ·   " + Locale.UI(Course.HasCheckpoint ? "Checkpoint" : "Hold Jump for more height");
+            stageLabel.text = stage + "   ·   " + string.Format(Locale.UI("Enemies left: {0}"), Progression.EnemiesRemaining);
+            var player = FindAnyObjectByType<PlayerController>();
+            var enemy = player == null ? null : Progression.NearestEnemy(player.transform.position);
+            if (enemy != null)
+            {
+                var offset = enemy.transform.position - player.transform.position;
+                string direction = Mathf.Abs(offset.y) > 3f ? offset.y > 0 ? "Above" : "Below" : offset.x > 0 ? "Right" : "Left";
+                string name = enemy.name.Split('(')[0].Trim();
+                if (name == "Spinio") name = "El Spinio";
+                stageLabel.text += "\n" + string.Format(Locale.UI("Nearest: {0} · {1}"), name, Locale.UI(direction));
+            }
+            else if (Progression.RunActive) stageLabel.text += "\n" + Locale.UI("Exit open · Head right");
         }
 
         private void ShowIntroObjective()
@@ -345,6 +426,7 @@ namespace RageRefinement
             confirmedAction = null;
             showingControls = false;
             showingLanguages = false;
+            showingWorkshop = false;
             bindingIndex = -1;
             ReleasePause();
             DialogueTranslations.RefreshCaption();
@@ -356,6 +438,7 @@ namespace RageRefinement
 
         private void LoadScene(int index)
         {
+            if (index == 0) Progression.LeaveRun();
             loading = true;
             CloseMenu();
             Time.timeScale = 1f;
@@ -367,25 +450,29 @@ namespace RageRefinement
             confirmedAction = null;
             showingControls = false;
             showingLanguages = false;
+            showingWorkshop = false;
             bindingIndex = -1;
             card.Clear();
-            if (Course.Finished)
+            card.style.width = 500;
+            if (Progression.RunEnded)
             {
-                AddHeading("Course complete");
-                var finish = AddButton("Return to title", () => LoadScene(0), true);
+                AddHeading(Progression.Won ? "Course complete" : "Reshape and try again");
+                AddNotice(string.Format(Locale.UI("This run: {0} clay · {1} enemies defeated"), Progression.RunClay, Progression.RunKills));
+                AddNotice(string.Format(Locale.UI("Saved clay: {0}"), Progression.Clay));
+                AddNotice("Your clay and buffs stay with you.");
+                var finish = AddButton("Workshop", () => ShowWorkshop(-1), true);
+                AddButton("Start next run", () => StartRun(false));
+                AddButton("Return to title", () => LoadScene(0));
                 AddButton("Quit game", () => Confirm("Quit the game?", "Quit game", () => Application.Quit()));
                 finish.Focus();
                 return;
             }
             AddHeading(inGame ? "Paused" : "Game options");
-            var primary = AddButton(inGame ? "Resume game" : "Start game",
-                inGame ? (Action)CloseMenu : () => LoadScene(1), true);
+            var primary = AddButton(inGame ? "Resume game" : Progression.StorySeen ? "Start run" : "Start game",
+                inGame ? (Action)CloseMenu : StartJourney, true);
+            AddButton("Workshop", () => ShowWorkshop(-1));
             if (!inGame)
-                AddButton("Skip to generated stages", () =>
-                {
-                    Course.StartGeneratedRun();
-                    LoadScene(Course.LevelScene);
-                });
+                AddNotice("Fight, earn clay, buy buffs, and try again.", 18);
             AddButton("Controls", ShowControls);
             AddButton(Locale.UI("Language") + "   " + Locale.Names[Locale.Language], ShowLanguages);
             var graphics = AddButton(GraphicsLabel(), null);
@@ -407,7 +494,7 @@ namespace RageRefinement
                 display.text = DisplayLabel(!windowed);
             };
             if (SceneManager.GetActiveScene().buildIndex == Course.LevelScene)
-                AddButton("Retry stage", () => Confirm("Retry this stage?", "Retry stage", () => { Course.RestartFromBeginning(); LoadScene(Course.LevelScene); }, "You will restart this stage from the beginning."));
+                AddButton("Restart run", () => Confirm("Restart this run?", "Restart run", () => StartRun(false)));
             if (inGame)
                 AddButton("Return to main menu", () => Confirm("Return to main menu?", "Return to main menu", () => LoadScene(0)));
             AddButton("Quit game", () => Confirm("Quit the game?", "Quit game", () => Application.Quit()));
@@ -421,6 +508,55 @@ namespace RageRefinement
             languageShortcut.text = Locale.UI("Language") + "  ·  " + Locale.Names[Locale.Language];
             if (SceneManager.GetActiveScene().buildIndex == 1) ShowIntroObjective();
             else if (inGame) ShowStageObjective();
+            RefreshProgress();
+        }
+
+        private void RefreshProgress()
+        {
+            if (clayLabel == null) return;
+            clayLabel.text = string.Format(Locale.UI("Clay: {0} · Shells: {1}"), Progression.Clay, Progression.Shields);
+            if (SceneManager.GetActiveScene().buildIndex == Course.LevelScene)
+            {
+                stageLabel.style.display = Progression.RunEnded ? DisplayStyle.None : DisplayStyle.Flex;
+                ShowStageObjective();
+            }
+        }
+
+        private void ShowWorkshop(int purchased)
+        {
+            showingWorkshop = true;
+            showingControls = showingLanguages = false;
+            confirmedAction = null;
+            bindingIndex = -1;
+            card.Clear();
+            card.style.width = 540;
+            AddHeading("Workshop");
+            var back = AddButton("Back", ShowActions, true);
+            AddNotice(string.Format(Locale.UI("Saved clay: {0}"), Progression.Clay), 23);
+            AddNotice(purchased >= 0 ? "Purchased. Ready for your next run." : "Permanent buffs apply to your next run.", 18);
+            for (int index = 0; index < Progression.Names.Length; index++)
+            {
+                int slot = index;
+                bool maxed = Progression.Rank(slot) >= Progression.Limits[slot];
+                var label = Locale.UI(Progression.Names[slot]) + "   " + Progression.Rank(slot) + " / " + Progression.Limits[slot];
+                var buy = AddButton(label, () => { if (Progression.TryBuy(slot)) ShowWorkshop(slot); });
+                buy.SetEnabled(!maxed && Progression.Clay >= Progression.Cost(slot));
+                string effect = slot == 0 ? "Hit damage: {0}" : slot == 1 ? "Hearts: {0}" : slot == 2 ? "Blocked hits per run: {0}" : "Heals 1 heart every {0} defeats";
+                int value = slot == 0 ? 1 + Progression.Rank(slot) : slot == 1 ? 3 + 2 * Progression.Rank(slot) : slot == 3 ? 4 - Progression.Rank(slot) : Progression.Rank(slot);
+                if (slot == 3 && Progression.Rank(slot) == 0) effect = "Healing not unlocked";
+                string price = maxed ? Locale.UI("Maxed") : string.Format(Locale.UI("{0} clay"), Progression.Cost(slot));
+                AddNotice(string.Format(Locale.UI(effect), value) + "   ·   " + price, 18);
+            }
+            if (Progression.RunEnded) AddButton("Start next run", () => StartRun(false), true);
+            back.Focus();
+        }
+
+        private void AddNotice(string text, int size = 19)
+        {
+            var notice = Text(Locale.UI(text), size, Muted);
+            notice.style.marginTop = 5;
+            notice.style.marginBottom = 3;
+            card.Add(notice);
         }
 
         private void ShowLanguages()
@@ -428,6 +564,7 @@ namespace RageRefinement
             showingLanguages = true;
             showingControls = false;
             card.Clear();
+            card.style.width = 500;
             AddHeading("Language");
             var back = AddButton("Back", ShowActions, true);
             Button selected = null;
@@ -450,6 +587,7 @@ namespace RageRefinement
             showingControls = true;
             bindingIndex = -1;
             card.Clear();
+            card.style.width = 500;
             AddHeading("Controls");
             var back = AddButton("Back", ShowActions, true);
             for (int index = 0; index < KeyboardBindings.Names.Length; index++)
@@ -497,12 +635,13 @@ namespace RageRefinement
             }
         }
 
-        private void Confirm(string heading, string label, Action action, string warning = "You will lose progress in this run.")
+        private void Confirm(string heading, string label, Action action, string warning = "Your clay and buffs are saved. This run will end.")
         {
             confirmedAction = action;
             card.Clear();
+            card.style.width = 500;
             AddHeading(heading);
-            if (inGame && !Course.Finished)
+            if (inGame && !Course.Finished && !Progression.RunEnded)
             {
                 var notice = Text(Locale.UI(warning), 19, Muted);
                 notice.style.marginBottom = 10;

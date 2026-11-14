@@ -27,6 +27,7 @@ flowchart LR
 | `PatchAssembly.cs` | Explicit IL hooks into the original game types and input lifecycle |
 | `ClayUI.cs` | Runtime atlas loading, nine-slice clay surfaces, hover/focus/press states |
 | `ProjectileBounds.cs` | Gameplay camera bounds for projectile cleanup and collision rejection |
+| `Progression.cs` | Persistent clay and buffs, per-run snapshots, rewards, defeat/victory lifecycle, enemy tracking |
 
 ## Pause contract
 
@@ -45,5 +46,7 @@ Use the existing clay village as visual authority. Added surfaces use the actual
 Both `Projectile.FixedUpdate` and `Projectile.OnTriggerEnter2D` are patched to test the collider bounds against the gameplay camera. Once the whole shot leaves any viewport edge, the original `Despawn` method marks it spent and schedules destruction. The collision hook prevents an offscreen hit during the same physics step that crosses the screen edge. Partially visible shots and onscreen damage retain their normal behavior. The original lifetime still handles shots if no gameplay camera is available.
 
 ## Patching boundaries
+
+Health initialization applies the saved run's health budget. Health damage passes through progression scaling and a pause guard; health start subscribes reward tracking after scene setup. The player's original death reload is redirected to the result screen. The title's original clay play button starts a new run and selects story or course according to saved story completion. See [PROGRESSION.md](PROGRESSION.md) for prices, rewards, and save boundaries.
 
 The patcher is intentionally tied to the supported game assembly. It expects named types, fields, and call counts, and fails when those contracts no longer hold. Always patch the original DLL and write to a separate output directory. Preserve and review those checks when porting to a different build.

@@ -27,7 +27,7 @@ namespace RageBench
         }
         private static void Call(object target, string name)
         {
-            target.GetType().GetMethod(name, Private).Invoke(target, null);
+            target.GetType().GetMethod(name, Private).Invoke(target, name == "ShowWorkshop" ? new object[] {-1} : null);
         }
         private void Check(VisualElement card, string context)
         {
@@ -74,7 +74,7 @@ namespace RageBench
                     var changed = (Action)events.GetValue(null);
                     if (changed != null) changed();
                     Call(menu, "OpenMenu");
-                    foreach (string screen in new[] {"ShowActions", "ShowControls", "ShowLanguages"})
+                    foreach (string screen in new[] {"ShowActions", "ShowControls", "ShowLanguages", "ShowWorkshop"})
                     {
                         Call(menu, screen);
                         yield return null;
@@ -114,6 +114,21 @@ namespace RageBench
             yield return Capture("course");
             yield return ProjectileChecks.Run();
             failures += ProjectileChecks.Failures;
+            yield return ProgressionChecks.Run();
+            failures += ProgressionChecks.Failures;
+            for (int language = 0; language < 4; language++)
+            {
+                languageField.SetValue(null, language);
+                var changed = (Action)events.GetValue(null);
+                if (changed != null) changed();
+                foreach (string screen in new[] {"ShowActions", "ShowWorkshop"})
+                {
+                    Call(menu, screen);
+                    yield return null; yield return null;
+                    Check(Field<VisualElement>(menu, "card"), "result " + language + " " + screen);
+                    if (language == 1) yield return Capture(screen == "ShowActions" ? "defeat" : "workshop");
+                }
+            }
             Debug.Log("SMOKE complete; failures=" + failures);
             Application.Quit(failures == 0 ? 0 : 1);
         }

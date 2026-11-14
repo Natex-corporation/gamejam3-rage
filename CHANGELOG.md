@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Add incremental runs with saved clay, escalating permanent buff prices, and a clay workshop.
+- Start fresh players at three hearts; snapshot damage, health, shell, and healing buffs for the next run.
+- Keep currency through defeat, show results before restarting, and skip completed intro conversations on later runs.
+- Require every active enemy to be defeated before opening each stage exit.
+- Show the nearest enemy and direction, and retire enemies knocked below the level so they cannot lock an exit.
+- Wrap upgraded heart HUDs, preserve menu widths when navigating, and normalize two leftover dialogue placeholders.
+- Add isolated save, economy, localization, and full input-driven playthrough QA commands.
+
 - Replace flat added UI with a textured clay atlas: pressed edges, shaded surfaces, clay buttons, HUD badges, and captions.
 - Add green hover and keyboard focus states and a compressed press response.
 - Despawn projectiles once their whole collider leaves the gameplay viewport.
