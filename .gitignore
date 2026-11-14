@@ -4,6 +4,11 @@
 !/.gitattributes
 !/.editorconfig
 !/README.md
+!/PLAYING.md
+!/AGENTS.md
+!/llms.txt
+!/demo-manifest.json
+!/codemeta.json
 !/LICENSE
 !/THIRD_PARTY_NOTICES.md
 !/CONTRIBUTING.md

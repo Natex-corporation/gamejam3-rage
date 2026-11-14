@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-11-14
+
+- Expand to six districts with permanent unlocks and selectable starting districts.
+- Add lobbers, shieldguards, menders, splitters, rushlings, and a two-phase Kiln King.
+- Add purchasable dash, ricochet, forked shots, and rhythm damage alongside the four body buffs.
+- Preserve clay styling with a project-owned sculpted boss and localized workshop/map/HUD.
+- Ship an extract-and-play Windows ZIP, rebuild developer kit, checksums, and source manifest.
+- Keep generated exits before the end wall and reopen their checks when the last enemy dies while the player is inside.
+- Add agent discovery guides, CodeMeta, and targeted enemy/trick/boss regression checks.
+
+### Earlier incremental and clay improvements
 
 - Add incremental runs with saved clay, escalating permanent buff prices, and a clay workshop.
 - Start fresh players at three hearts; snapshot damage, health, shell, and healing buffs for the next run.

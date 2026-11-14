@@ -18,11 +18,13 @@ flowchart LR
 
 | File | Owns |
 | --- | --- |
-| `GameMenu.cs` | Persistent UI, paper palette, pause ownership, settings, input blocking, graphics scale |
+| `GameMenu.cs` | Persistent UI, clay surfaces, pause ownership, settings, input blocking, graphics scale |
 | `Locale.cs` | Language state, localized UI strings, preference persistence, language change events |
 | `DialogueTranslations.cs` | Source-text lookup, translated choices, current-line replay, continue captions |
 | `KeyboardBindings.cs` | InputAction asset registration, binding overrides, duplicate-key rejection, defaults |
-| `Course.cs` | Three-stage progression, generated placement, checkpoints, health and jump tuning |
+| `Course.cs` | Six-district progression, generated placement, checkpoints, health and jump tuning |
+| `DemoContent.cs` | Cloned enemy stats, variant behaviors, district atmosphere, boss attacks and telegraphs |
+| `PlayerTricks.cs` | Physics dash, cloned fork attack data, ricochet, rhythm counter |
 | `TitleCaptions.cs` | Localized captions over the game's title controls |
 | `PatchAssembly.cs` | Explicit IL hooks into the original game types and input lifecycle |
 | `ClayUI.cs` | Runtime atlas loading, nine-slice clay surfaces, hover/focus/press states |

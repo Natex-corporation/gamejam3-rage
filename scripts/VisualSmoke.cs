@@ -27,6 +27,7 @@ namespace RageBench
         }
         private static void Call(object target, string name)
         {
+            if (name == "ShowWorkshop") target.GetType().GetField("workshopPage",Private).SetValue(target,0);
             target.GetType().GetMethod(name, Private).Invoke(target, name == "ShowWorkshop" ? new object[] {-1} : null);
         }
         private void Check(VisualElement card, string context)
@@ -74,7 +75,7 @@ namespace RageBench
                     var changed = (Action)events.GetValue(null);
                     if (changed != null) changed();
                     Call(menu, "OpenMenu");
-                    foreach (string screen in new[] {"ShowActions", "ShowControls", "ShowLanguages", "ShowWorkshop"})
+                    foreach (string screen in new[] {"ShowActions", "ShowControls", "ShowLanguages", "ShowWorkshop", "ShowTricks", "ShowDistricts"})
                     {
                         Call(menu, screen);
                         yield return null;

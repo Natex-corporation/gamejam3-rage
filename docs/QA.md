@@ -1,28 +1,24 @@
-# Verification notes
+# Demo verification
 
-Verified on 2026-11-14 with the compatible Unity 6000.6.6f1 Windows player. All integration profiles were separate from the normal player save.
+Verified on 2026-11-14 with Unity 6000.6.6f1 on Windows. Runtime suites use isolated PlayerPrefs profiles. Hosted CI checks documentation, metadata, source boundaries, and PowerShell syntax; it does not run the game.
 
-## Full keyboard-input playthrough
+## Fresh input-driven expedition
 
-The final progression balance completed the village conversations and all three stages through actual Input System keyboard events. The runner moved, attacked, climbed, entered exits, and purchased upgrades through the workshop UI. It did not grant money, teleport the player, alter enemy health, or force victory.
+The runner completed the village conversations and all six districts, defeated the two-phase Kiln King, cleared its reinforcements, and reached victory using Input System keyboard events. It moved, jumped, attacked, dashed, entered exits, and bought upgrades through the workshop UI. It did not grant currency, teleport, change enemy health, or force completion.
 
-- Fresh attempt: defeated three enemies, then died with 52 saved clay.
-- Workshop: bought Stronger kicks rank 1 and Second wind rank 1; 12 clay remained.
-- Next attempt: defeated every enemy in all three stages and reached the victory screen.
-- Recorded result: 151 seconds, one defeat, 25 enemies defeated across both attempts, 15 total damage received.
+Recorded result: **360 seconds, three defeats, 60 enemies defeated, 44 total damage received**. The first attempt ended after three kills with 58 clay; the player bought damage and health. Later attempts bought body buffs and tricks and resumed unlocked districts. This is an automated regression result, not a measured human playtime or a promise of demo length.
 
-The earlier route stalled because it tried to fight a platform enemy from the ground. Correcting the automated route to fight that enemy after climbing allowed a complete run; no enemy-placement change was needed for that issue.
+## Regression coverage
 
-## Regression suite
+- Actions, controls, languages, body workshop, tricks, and district map in Czech, English, Slovak, and German at 1280×720, 800×600, and 1024×480; result screens and a 15-heart HUD.
+- Currency, prices, insufficient funds, caps, duplicate reward prevention, next-run snapshots, shells, healing, defeat results, six district gates, and fallen-enemy retirement.
+- Projectile cleanup on all four camera edges, partial visibility, camera movement, onscreen damage, and rejection of offscreen damage.
+- Four-rank save migration, trick purchases, directional shield damage, mender healing, and immediate splitter-child exit accounting.
+- Actual Shift dash movement/invulnerability/cooldown, forked attack cloning, a real projectile ricochet, rhythm sixth-hit damage, 280-health boss, phase-two reinforcements, telegraphs, and emitted attacks.
+- Thirty generated-layout samples verify exits remain on supported ground before the end wall; patched stay callbacks advance all six district gates after the final enemy dies. A fresh replay exposed the old randomized exit crossing the wall, which is now constrained.
+- Boss artwork uses the original enemy draw layer and one fitted collision body; visual review caught and corrected background occlusion and a duplicate collider that made the sculpture float.
+- Standalone launcher and required-file verification; QA helpers are excluded from release registration.
 
-The final smoke suite passed:
+Run the suites using [BUILDING.md](BUILDING.md). Use the same profile for Smoke followed by SaveProbe to verify persistence across processes. `-Visible` enables reliable captures where hidden-window rendering is suppressed. Targeted suites use controlled scene transitions and damage; they are separate from the input-driven expedition.
 
-- Actions, controls, languages, and workshop at 1280×720, 800×600, and 1024×480, across Czech, English, Slovak, and German.
-- Result and workshop screens in all four languages, plus a fully upgraded 15-heart HUD.
-- Fresh strength, saved partial-damage rewards, exact purchase costs, insufficient funds, duplicate defeat prevention, upgrade caps, and next-run-only effects.
-- All four buff types, shell consumption, healing thresholds, defeat results, stage gates, and victory.
-- Fallen enemies are retired and cannot keep an exit locked.
-- Projectiles leave all four viewport edges, retain partial visibility, follow camera movement, and cannot deal offscreen damage.
-- A separate `SaveProbe` process verifies the same saved wallet and buff ranks after restarting the game.
-
-Hosted CI checks PowerShell syntax and repository documentation links. The runtime suites require the compatible local game and can be repeated with [the QA launcher](BUILDING.md#visual-and-gameplay-verification).
+Controller navigation and input bindings are supported, but this verification used keyboard/mouse rather than a physical gamepad. Long-term human balance and broad hardware compatibility remain unmeasured.

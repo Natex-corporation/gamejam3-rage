@@ -1,9 +1,10 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('Smoke','Playthrough','SaveProbe')][string]$Suite = 'Smoke',
+    [ValidateSet('Smoke','Playthrough','SaveProbe','Demo')][string]$Suite = 'Smoke',
     [string]$GameData = (Split-Path $PSScriptRoot -Parent),
     [ValidatePattern('^[a-zA-Z0-9-]+$')][string]$Profile = ('incremental-' + $Suite.ToLowerInvariant()),
-    [int]$TimeoutSeconds = 900
+    [int]$TimeoutSeconds = 900,
+    [switch]$Visible
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
@@ -31,6 +32,7 @@ Copy-Item -LiteralPath (Join-Path $build 'Assembly-CSharp.dll'),(Join-Path $buil
 Copy-Item -LiteralPath (Join-Path $build 'RuntimeInitializeOnLoads.json'),(Join-Path $build 'ScriptingAssemblies.json') -Destination $data -Force
 New-Item -ItemType Directory -Path (Join-Path $data 'Refinement\Assets') -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $build 'Refinement\Assets\clay-ui.png') -Destination (Join-Path $data 'Refinement\Assets') -Force
+Copy-Item -LiteralPath (Join-Path $build 'Refinement\Assets\kiln-king.png') -Destination (Join-Path $data 'Refinement\Assets') -Force
 
 $names = 'mscorlib','netstandard','System','System.Core','UnityEngine.CoreModule','UnityEngine.ScriptingModule',
     'UnityEngine.MathematicsModule','UnityEngine.UIElementsModule','UnityEngine.TextRenderingModule',
@@ -39,6 +41,7 @@ $names = 'mscorlib','netstandard','System','System.Core','UnityEngine.CoreModule
 $references = $names | ForEach-Object { '/r:' + (Join-Path $data "Managed\$_.dll") }
 $sources = if ($Suite -eq 'Playthrough') { @('FullPlaythrough.cs') }
     elseif ($Suite -eq 'SaveProbe') { @('SaveProbe.cs') }
+    elseif ($Suite -eq 'Demo') { @('DemoChecks.cs') }
     else { @('VisualSmoke.cs','ProjectileChecks.cs','ProgressionChecks.cs') }
 $sources = @($sources | ForEach-Object { Join-Path $PSScriptRoot $_ })
 & (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') /nologo /noconfig /nostdlib+ /target:library "/out:$data\Managed\RageBench.dll" @references @sources
@@ -57,7 +60,8 @@ if ($assemblies.names -notcontains 'RageBench.dll') {
 [IO.File]::WriteAllText($runtimePath, ($runtime | ConvertTo-Json -Depth 8 -Compress))
 [IO.File]::WriteAllText($assembliesPath, ($assemblies | ConvertTo-Json -Depth 8 -Compress))
 $log = Join-Path $fixture 'qa.log'
-$process = Start-Process -FilePath (Join-Path $fixture 'GameJam3_Rage.exe') -WorkingDirectory $fixture -WindowStyle Hidden -PassThru -ArgumentList @(
+$windowStyle = if ($Visible) { 'Normal' } else { 'Hidden' }
+$process = Start-Process -FilePath (Join-Path $fixture 'GameJam3_Rage.exe') -WorkingDirectory $fixture -WindowStyle $windowStyle -PassThru -ArgumentList @(
     '-force-d3d11','-screen-fullscreen','0','-screen-width','1280','-screen-height','720',
     '-rage-qa-profile',$Profile,'-logFile',('"{0}"' -f $log)
 )
@@ -66,6 +70,6 @@ while (!$process.WaitForExit(30000)) {
     if ([DateTime]::UtcNow -gt $deadline) { $process.Kill(); throw "QA timeout: $log" }
     Get-Content -LiteralPath $log -Tail 3
 }
-Select-String -LiteralPath $log -Pattern 'RUN COMPLETE|RUN FAIL|RUN DEFEAT|RUN BOUGHT|SMOKE|PROJECTILE|ECONOMY|SAVE PROBE|Exception' -CaseSensitive | ForEach-Object Line
+Select-String -LiteralPath $log -Pattern 'RUN COMPLETE|RUN FAIL|RUN DEFEAT|RUN BOUGHT|SMOKE|PROJECTILE|ECONOMY|SAVE PROBE|DEMO|Exception' -CaseSensitive | ForEach-Object Line
 if ($process.ExitCode -ne 0) { throw "QA failed with exit $($process.ExitCode). Log: $log" }
 Write-Output "QA passed. Log and screenshots: $fixture"

@@ -44,6 +44,7 @@ if ($LASTEXITCODE) { throw 'Assembly patching failed.' }
 $artwork = Join-Path $Output 'Refinement\Assets'
 New-Item -ItemType Directory -Path $artwork -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $repo 'assets\clay-ui.png') -Destination $artwork -Force
+Copy-Item -LiteralPath (Join-Path $repo 'assets\kiln-king.png') -Destination $artwork -Force
 
 # Keep existing player registrations and register this layer only once.
 $assemblies = Get-Content -LiteralPath (Join-Path $GameData 'ScriptingAssemblies.json') -Raw | ConvertFrom-Json
@@ -74,8 +75,11 @@ if ($Apply) {
     $installedArt = Join-Path $GameData 'Refinement\Assets'
     $previousArt = Join-Path $installedArt 'clay-ui.png'
     if (Test-Path -LiteralPath $previousArt) { Copy-Item -LiteralPath $previousArt -Destination (Join-Path $backup 'clay-ui.png') }
+    $previousBoss = Join-Path $installedArt 'kiln-king.png'
+    if (Test-Path -LiteralPath $previousBoss) { Copy-Item -LiteralPath $previousBoss -Destination (Join-Path $backup 'kiln-king.png') }
     New-Item -ItemType Directory -Path $installedArt -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $artwork 'clay-ui.png') -Destination $installedArt -Force
+    Copy-Item -LiteralPath (Join-Path $artwork 'kiln-king.png') -Destination $installedArt -Force
     Write-Host "Installed. Previous files: $backup"
 }
 Write-Host "Build ready: $Output"

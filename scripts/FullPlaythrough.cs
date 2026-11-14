@@ -67,7 +67,7 @@ public sealed class Runner : MonoBehaviour {
   if (SceneManager.GetActiveScene().buildIndex==1) yield return PlayIntro();
   else if (SceneManager.GetActiveScene().buildIndex!=2) {Die("Start did not load the game"); yield break;}
   if (failed) yield break;
-  for (int run=0;run<18 && !Progression.Won;run++) {
+  for (int run=0;run<32 && !Progression.Won;run++) {
    while(Progression.RunActive && !failed) {
     yield return new WaitForSecondsRealtime(.25f);
     yield return PlayStage();
@@ -82,8 +82,12 @@ public sealed class Runner : MonoBehaviour {
    do {
     bought=false;
     // Damage first, then sustain, then a larger reserve for climbing and ranged enemies.
-    foreach(int slot in new[]{0,3,1,2}) {
+    foreach(int slot in Progression.Rank(0)<3 ? new[]{0,1,2,3,4,5,6,7} : new[]{4,0,6,3,1,5,2,7}) {
      if(Progression.Rank(slot)>=Progression.Limits[slot] || Progression.Clay<Progression.Cost(slot)) continue;
+     var labels=menu.GetComponent<UIDocument>().rootVisualElement.Query<Button>().ToList();
+     if(slot>=4 && labels.Any(b=>b.text=="View tricks")) Submit(menu,"View tricks");
+     if(slot<4 && labels.Any(b=>b.text=="View body buffs")) Submit(menu,"View body buffs");
+     yield return null;yield return null;
      int before=Progression.Rank(slot);
      Submit(menu,Progression.Names[slot],true);
      yield return null;yield return null;
@@ -199,6 +203,9 @@ public sealed class Runner : MonoBehaviour {
   } else Debug.Log("RUN respawned at the upper checkpoint "+p.transform.position);
   yield return ClearFloor(token,true,shelf.bounds.max.y);
   if(!Progression.RunActive || failed) yield break;
+  if(DemoContent.Boss!=null) yield return FightBoss(token);
+  if(!Progression.RunActive || failed) yield break;
+  yield return ClearFloor(token,true,shelf.bounds.max.y);
   var exit=FindAnyObjectByType<WinTrigger>();
   yield return Traverse(exit.transform.position.x+1.0f,token,40f,true);
   Set();
@@ -211,7 +218,7 @@ public sealed class Runner : MonoBehaviour {
   float nextReport=0;
   nextAttack=attackEnd=0;
   while(loads==token && Progression.RunActive && Time.realtimeSinceStartup<deadline) {
-   var target=FindObjectsByType<Enemy>().Where(e=>e.GetComponent<Health>().CurrentHealth>0 &&
+   var target=FindObjectsByType<Enemy>().Where(e=>e.GetComponent<KilnKing>()==null && e.GetComponent<Health>().CurrentHealth>0 &&
      (upper ? e.GetComponent<Collider2D>().bounds.min.y>shelfTop-2 : e.GetComponent<Collider2D>().bounds.min.y<0))
      .OrderBy(e=>Mathf.Abs(e.transform.position.x-p.transform.position.x)).FirstOrDefault();
    if(target==null){Set();yield break;}
@@ -221,7 +228,8 @@ public sealed class Runner : MonoBehaviour {
     nextReport=Time.realtimeSinceStartup+5;
    }
    var dir=dx>=0?right:left;
-   if(Mathf.Abs(dx)>1.65f) Set(dir);
+   if(Mathf.Abs(dx)<3 && Progression.ActiveRank(4)>0 && PlayerTricks.Cooldown<=0) Set(dir,attack,Key.LeftShift);
+   else if(Mathf.Abs(dx)>1.65f) Set(dir);
    else if(Time.time>=nextAttack){Set(dir,attack);nextAttack=Time.time+.24f;attackEnd=Time.time+.065f;}
    else if(Time.time>=attackEnd) Set();
    else Set(dir,attack);
@@ -229,6 +237,26 @@ public sealed class Runner : MonoBehaviour {
   }
   Set();
   if(Progression.RunActive && loads==token) Die("combat stalled on "+(upper?"upper":"lower")+" floor, remaining="+Progression.EnemiesRemaining);
+ }
+
+ private IEnumerator FightBoss(int token) {
+  float deadline=Time.realtimeSinceStartup+150;
+  nextAttack=attackEnd=0;
+  while(loads==token && Progression.RunActive && DemoContent.Boss!=null && Time.realtimeSinceStartup<deadline) {
+   var boss=DemoContent.Boss;
+   float dx=boss.transform.position.x-p.transform.position.x;
+   var dir=dx>=0?right:left;
+   bool jumpNow=!string.IsNullOrEmpty(boss.Telegraph) && (boss.Telegraph.Contains("Slam") || boss.Telegraph.Contains("Charge"));
+   if(Mathf.Abs(dx)>2.8f) Set(jumpNow?new[]{dir,jump}:new[]{dir});
+   else if(Progression.ActiveRank(4)>0 && PlayerTricks.Cooldown<=0 && !string.IsNullOrEmpty(boss.Telegraph)) Set(dir,attack,Key.LeftShift);
+   else if(Time.time>=nextAttack) {Set(jumpNow?new[]{dir,attack,jump}:new[]{dir,attack});nextAttack=Time.time+.25f;attackEnd=Time.time+.07f;}
+   else if(Time.time>=attackEnd)Set(jumpNow?new[]{jump}:new Key[0]);
+   else Set(jumpNow?new[]{dir,attack,jump}:new[]{dir,attack});
+   yield return null;
+  }
+  Set();
+  if(Progression.RunActive && DemoContent.Boss!=null)Die("boss fight stalled");
+  else if(Progression.RunActive)Debug.Log("RUN Kiln King defeated through input");
  }
 
  private IEnumerator ClearNearby(int token) {

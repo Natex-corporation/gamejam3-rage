@@ -1,0 +1,16 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "name": "Rage: Clay Demo",
+  "softwareVersion": "0.2.0",
+  "description": "Open-source C# expansion for a standalone incremental clay platformer demo with six districts, eight upgrades, and a two-phase boss.",
+  "codeRepository": "https://github.com/Natex-corporation/gamejam3-rage",
+  "issueTracker": "https://github.com/Natex-corporation/gamejam3-rage/issues",
+  "license": "https://spdx.org/licenses/MIT.html",
+  "programmingLanguage": "C#",
+  "runtimePlatform": "Unity 6000.6.6f1",
+  "operatingSystem": "Windows 10/11 x64",
+  "applicationCategory": "Game",
+  "keywords": ["clay", "platformer", "incremental", "demo", "unity", "roguelite", "offline"],
+  "downloadUrl": "https://github.com/Natex-corporation/gamejam3-rage/releases/latest/download/Rage-Clay-Demo-Windows-x64.zip"
+}

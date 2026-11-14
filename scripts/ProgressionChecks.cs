@@ -58,7 +58,10 @@ namespace RageBench
             int wallet = Progression.Clay;
             Hurt(enemy, 1000);
             Expect(Progression.Clay == wallet, "dead enemies cannot reward twice");
-            Expect(Progression.TryBuy(0) && Progression.Clay == wallet - 12 && Progression.Rank(0) == 1, "purchase charges the exact price");
+            Hurt(Enemy(),1000);
+            wallet = Progression.Clay;
+            int price = Progression.Cost(0);
+            Expect(Progression.TryBuy(0) && Progression.Clay == wallet - price && Progression.Rank(0) == 1, "purchase charges the exact price");
             enemy = Enemy();
             initial = enemy.CurrentHealth;
             Hurt(enemy, 1);
@@ -87,19 +90,21 @@ namespace RageBench
             Expect(fallen.CurrentHealth == 0 && Progression.EnemiesRemaining == remaining - 1, "fallen enemies cannot permanently lock an exit");
             for (int wave = 0; wave < Course.StageCount; wave++)
             {
-                foreach (var target in UnityEngine.Object.FindObjectsByType<Enemy>())
-                    if (target.GetComponent<Health>().CurrentHealth > 0) Hurt(target.GetComponent<Health>(), 10000);
+                for (int sweep = 0; sweep < 4 && Progression.EnemiesRemaining > 0; sweep++)
+                    foreach (var target in UnityEngine.Object.FindObjectsByType<Enemy>())
+                        if (target.GetComponent<Health>().CurrentHealth > 0) Hurt(target.GetComponent<Health>(), 10000);
                 Expect(Progression.EnemiesRemaining == 0, "all enemies counted in stage " + (wave + 1));
-                Course.TryAdvance(Player().GetComponent<Collider2D>());
+                var gate=UnityEngine.Object.FindAnyObjectByType<WinTrigger>();
+                typeof(WinTrigger).GetMethod("OnTriggerStay2D",Hidden).Invoke(gate,new object[] {Player().GetComponent<Collider2D>()});
                 if (wave < Course.StageCount - 1)
                 {
                     yield return null; yield return null;
                     Time.timeScale = 0;
-                    Expect(Course.Stage == wave + 1 && Enemy().MaxHealth == 8 + Course.Stage * 6, "next stage gets tougher");
+                    Expect(Course.Stage == wave + 1 && Enemy().MaxHealth >= DemoContent.EnemyHealth[Course.Stage], "next district gets tougher");
                 }
             }
-            Expect(Course.Finished && Progression.Won && GameMenu.GameplayPaused, "clearing all three stages opens victory results");
-            Expect(Progression.TryBuy(1) && Progression.TryBuy(2) && Progression.TryBuy(3), "all four permanent buff types can be purchased");
+            Expect(Course.Finished && Progression.Won && GameMenu.GameplayPaused, "clearing all six districts opens victory results");
+            Expect(Progression.TryBuy(1) && Progression.TryBuy(2) && Progression.TryBuy(3), "all four body buff types can be purchased");
             StartRun(menu);
             yield return null; yield return null;
             Time.timeScale = 0;
@@ -130,7 +135,7 @@ namespace RageBench
             ScreenCapture.CaptureScreenshot(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Application.dataPath), "max-hearts.png"));
             yield return new WaitForSecondsRealtime(.15f);
             Hurt(Player(), 10000); Hurt(Player(), 10000);
-            string expected = Progression.Clay + "|" + string.Join(",", Enumerable.Range(0, 4).Select(i => Progression.Rank(i).ToString()).ToArray());
+            string expected = Progression.Clay + "|" + string.Join(",", Enumerable.Range(0, 8).Select(i => Progression.Rank(i).ToString()).ToArray());
             PlayerPrefs.SetString(key + ".expected", expected);
             PlayerPrefs.Save();
             Debug.Log("ECONOMY complete; failures=" + Failures + " persisted=" + expected);

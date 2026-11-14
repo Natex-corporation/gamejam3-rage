@@ -40,7 +40,11 @@ namespace RageRefinement
         private Button languageShortcut;
         private Label stageLabel;
         private Label clayLabel;
+        private Label bossLabel;
+        private Label dashLabel;
         private bool showingWorkshop;
+        private bool showingMap;
+        private int workshopPage;
         private float nextWorldRefresh;
         private float lockedExitUntil;
         private int nextNeighbor;
@@ -102,8 +106,14 @@ namespace RageRefinement
 
         private void StartRun(bool story)
         {
+            int district = Progression.Won ? 0 : Progression.UnlockedDistrict;
+            StartDistrict(story ? 0 : district, story);
+        }
+
+        private void StartDistrict(int district, bool story)
+        {
             Progression.BeginRun();
-            Course.BeginRun();
+            Course.BeginRun(district);
             LoadScene(story ? 1 : Course.LevelScene);
         }
 
@@ -261,6 +271,26 @@ namespace RageRefinement
             StylePaperBadge(clayLabel);
             root.Add(clayLabel);
 
+            bossLabel = Text("", 21, Ink);
+            bossLabel.style.position = Position.Absolute;
+            bossLabel.style.left = Length.Percent(34);
+            bossLabel.style.right = Length.Percent(34);
+            bossLabel.style.top = 84;
+            bossLabel.style.paddingLeft = bossLabel.style.paddingRight = 14;
+            bossLabel.style.paddingTop = bossLabel.style.paddingBottom = 8;
+            bossLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            bossLabel.pickingMode = PickingMode.Ignore;
+            StylePaperBadge(bossLabel);
+            root.Add(bossLabel);
+            dashLabel = Text("", 18, Ink);
+            dashLabel.style.position = Position.Absolute;
+            dashLabel.style.left = 24; dashLabel.style.bottom = 62;
+            dashLabel.style.paddingLeft = dashLabel.style.paddingRight = 12;
+            dashLabel.style.paddingTop = dashLabel.style.paddingBottom = 6;
+            dashLabel.pickingMode = PickingMode.Ignore;
+            StylePaperBadge(dashLabel);
+            root.Add(dashLabel);
+
             overlay = new VisualElement();
             overlay.style.position = Position.Absolute;
             overlay.style.left = 0;
@@ -315,6 +345,7 @@ namespace RageRefinement
             {
                 nextWorldRefresh = Time.unscaledTime + .25f;
                 Progression.UpdateWorld();
+                RefreshProgress();
                 if (SceneManager.GetActiveScene().buildIndex == Course.LevelScene) ShowStageObjective();
             }
             var keyboard = Keyboard.current;
@@ -331,7 +362,7 @@ namespace RageRefinement
                 || (pad != null && pad.startButton.wasPressedThisFrame);
             if (toggle || (isOpen && pad != null && pad.buttonEast.wasPressedThisFrame))
             {
-                if (confirmedAction != null || showingControls || showingLanguages || showingWorkshop)
+                if (confirmedAction != null || showingControls || showingLanguages || showingWorkshop || showingMap)
                     ShowActions();
                 else if (isOpen && !Course.Finished && !Progression.RunEnded)
                     CloseMenu();
@@ -345,6 +376,7 @@ namespace RageRefinement
             lockedExitUntil = 0;
             Course.OnSceneChanged(current);
             Progression.SceneChanged(previous, current);
+            if (current.buildIndex == Course.LevelScene) DemoContent.Install(current.GetRootGameObjects());
             inGame = current.buildIndex > 0;
             if (inGame) TitleCaptions.Clear();
             bool intro = current.buildIndex == 1;
@@ -372,7 +404,7 @@ namespace RageRefinement
         {
             if (Time.unscaledTime < lockedExitUntil) return;
             string stage = string.Format(Locale.UI("Stage {0} / {1}"), Course.Stage + 1, Course.StageCount);
-            stageLabel.text = stage + "   ·   " + string.Format(Locale.UI("Enemies left: {0}"), Progression.EnemiesRemaining);
+            stageLabel.text = Locale.UI(DemoContent.Districts[Course.Stage]) + " · " + stage + "\n" + string.Format(Locale.UI("Enemies left: {0}"), Progression.EnemiesRemaining);
             var player = FindAnyObjectByType<PlayerController>();
             var enemy = player == null ? null : Progression.NearestEnemy(player.transform.position);
             if (enemy != null)
@@ -381,6 +413,7 @@ namespace RageRefinement
                 string direction = Mathf.Abs(offset.y) > 3f ? offset.y > 0 ? "Above" : "Below" : offset.x > 0 ? "Right" : "Left";
                 string name = enemy.name.Split('(')[0].Trim();
                 if (name == "Spinio") name = "El Spinio";
+                name = Locale.UI(name);
                 stageLabel.text += "\n" + string.Format(Locale.UI("Nearest: {0} · {1}"), name, Locale.UI(direction));
             }
             else if (Progression.RunActive) stageLabel.text += "\n" + Locale.UI("Exit open · Head right");
@@ -428,6 +461,7 @@ namespace RageRefinement
             showingLanguages = false;
             showingWorkshop = false;
             bindingIndex = -1;
+            showingMap = false;
             ReleasePause();
             DialogueTranslations.RefreshCaption();
             overlay.style.display = DisplayStyle.None;
@@ -453,6 +487,7 @@ namespace RageRefinement
             showingWorkshop = false;
             bindingIndex = -1;
             card.Clear();
+            showingMap = false;
             card.style.width = 500;
             if (Progression.RunEnded)
             {
@@ -463,6 +498,7 @@ namespace RageRefinement
                 var finish = AddButton("Workshop", () => ShowWorkshop(-1), true);
                 AddButton("Start next run", () => StartRun(false));
                 AddButton("Return to title", () => LoadScene(0));
+                AddButton("Choose district", ShowDistricts);
                 AddButton("Quit game", () => Confirm("Quit the game?", "Quit game", () => Application.Quit()));
                 finish.Focus();
                 return;
@@ -471,6 +507,7 @@ namespace RageRefinement
             var primary = AddButton(inGame ? "Resume game" : Progression.StorySeen ? "Start run" : "Start game",
                 inGame ? (Action)CloseMenu : StartJourney, true);
             AddButton("Workshop", () => ShowWorkshop(-1));
+            if (!inGame && Progression.StorySeen) AddButton("Choose district", ShowDistricts);
             if (!inGame)
                 AddNotice("Fight, earn clay, buy buffs, and try again.", 18);
             AddButton("Controls", ShowControls);
@@ -515,6 +552,13 @@ namespace RageRefinement
         {
             if (clayLabel == null) return;
             clayLabel.text = string.Format(Locale.UI("Clay: {0} · Shells: {1}"), Progression.Clay, Progression.Shields);
+            var boss = DemoContent.Boss;
+            bossLabel.style.display = boss != null && boss.Health.CurrentHealth > 0 && !Progression.RunEnded ? DisplayStyle.Flex : DisplayStyle.None;
+            if (boss != null)
+                bossLabel.text = Locale.UI("The Kiln King") + "  " + boss.Health.CurrentHealth + " / " + boss.Health.MaxHealth
+                    + "\n" + Locale.UI(string.IsNullOrEmpty(boss.Telegraph) ? boss.Phase == 2 ? "Phase 2 · Blazing clay" : "Phase 1 · Fired clay" : boss.Telegraph);
+            dashLabel.style.display = Progression.RunActive && Progression.ActiveRank(4) > 0 && SceneManager.GetActiveScene().buildIndex == Course.LevelScene ? DisplayStyle.Flex : DisplayStyle.None;
+            dashLabel.text = PlayerTricks.Cooldown <= 0 ? Locale.UI("Dash ready · Shift / B") : string.Format(Locale.UI("Dash ready in {0}s"),PlayerTricks.Cooldown.ToString("0.0"));
             if (SceneManager.GetActiveScene().buildIndex == Course.LevelScene)
             {
                 stageLabel.style.display = Progression.RunEnded ? DisplayStyle.None : DisplayStyle.Flex;
@@ -525,6 +569,7 @@ namespace RageRefinement
         private void ShowWorkshop(int purchased)
         {
             showingWorkshop = true;
+            showingMap = false;
             showingControls = showingLanguages = false;
             confirmedAction = null;
             bindingIndex = -1;
@@ -533,8 +578,9 @@ namespace RageRefinement
             AddHeading("Workshop");
             var back = AddButton("Back", ShowActions, true);
             AddNotice(string.Format(Locale.UI("Saved clay: {0}"), Progression.Clay), 23);
+            AddButton(workshopPage == 0 ? "View tricks" : "View body buffs", () => { workshopPage = 1 - workshopPage; ShowWorkshop(-1); });
             AddNotice(purchased >= 0 ? "Purchased. Ready for your next run." : "Permanent buffs apply to your next run.", 18);
-            for (int index = 0; index < Progression.Names.Length; index++)
+            for (int index = workshopPage * 4; index < workshopPage * 4 + 4; index++)
             {
                 int slot = index;
                 bool maxed = Progression.Rank(slot) >= Progression.Limits[slot];
@@ -544,12 +590,38 @@ namespace RageRefinement
                 string effect = slot == 0 ? "Hit damage: {0}" : slot == 1 ? "Hearts: {0}" : slot == 2 ? "Blocked hits per run: {0}" : "Heals 1 heart every {0} defeats";
                 int value = slot == 0 ? 1 + Progression.Rank(slot) : slot == 1 ? 3 + 2 * Progression.Rank(slot) : slot == 3 ? 4 - Progression.Rank(slot) : Progression.Rank(slot);
                 if (slot == 3 && Progression.Rank(slot) == 0) effect = "Healing not unlocked";
+                if (slot == 4) { effect = "Shift / B dash · cooldown {0}s"; value = 4; }
+                if (slot == 5) { effect = "Projectile bounces: {0}"; value = Progression.Rank(slot); }
+                if (slot == 6) { effect = "Extra charged-shot pellets: {0}"; value = Progression.Rank(slot); }
+                if (slot == 7) { effect = "Double damage every {0} hits"; value = 7 - Progression.Rank(slot); }
                 string price = maxed ? Locale.UI("Maxed") : string.Format(Locale.UI("{0} clay"), Progression.Cost(slot));
-                AddNotice(string.Format(Locale.UI(effect), value) + "   ·   " + price, 18);
+                if (slot >= 4 && Progression.Rank(slot) == 0) effect = "Buy to unlock this trick.";
+                object displayed = slot == 4 ? (object)(4 - Progression.Rank(slot) * .75f).ToString("0.00") : value;
+                AddNotice(string.Format(Locale.UI(effect), displayed) + "   ·   " + price, 18);
             }
             if (Progression.RunEnded) AddButton("Start next run", () => StartRun(false), true);
             back.Focus();
         }
+
+        private void ShowDistricts()
+        {
+            showingMap = true;
+            showingWorkshop = showingControls = showingLanguages = false;
+            confirmedAction = null; bindingIndex = -1;
+            card.Clear(); card.style.width = 540;
+            AddHeading("Choose district");
+            var back = AddButton("Back", ShowActions, true);
+            AddNotice("Cleared districts stay unlocked.",18);
+            for (int index = 0; index < Course.StageCount; index++)
+            {
+                int district = index;
+                var button = AddButton((index + 1) + ". " + Locale.UI(DemoContent.Districts[index]), () => StartDistrict(district,false));
+                button.SetEnabled(index <= Progression.UnlockedDistrict);
+            }
+            back.Focus();
+        }
+
+        private void ShowTricks() { workshopPage = 1; ShowWorkshop(-1); }
 
         private void AddNotice(string text, int size = 19)
         {
@@ -608,6 +680,7 @@ namespace RageRefinement
             bindingMessage = Text(Locale.UI("Tap Attack to kick. Hold and release to shoot.\nArrow keys move. Left click also attacks.\nController: stick to move, A jump, X attack, Y talk, Start pause."), 18, Muted);
             bindingMessage.style.marginTop = 12;
             card.Add(bindingMessage);
+            AddNotice("Shift / B: dash after unlocking Clay dash.",18);
             back.Focus();
         }
 

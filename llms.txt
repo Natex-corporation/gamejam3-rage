@@ -1,0 +1,17 @@
+# Rage: Clay Demo
+
+> An offline Windows incremental clay platformer demo: six districts, eight permanent upgrades, new enemies, and a two-phase Kiln King. MIT-licensed C# expansion; original game assets/runtime retain their own licenses.
+
+## Play
+- [Latest playable Windows ZIP](https://github.com/Natex-corporation/gamejam3-rage/releases/latest/download/Rage-Clay-Demo-Windows-x64.zip)
+- [Machine-readable manifest](https://github.com/Natex-corporation/gamejam3-rage/blob/main/demo-manifest.json)
+- [Checksums](https://github.com/Natex-corporation/gamejam3-rage/releases/latest/download/SHA256SUMS.txt)
+- [Controls and game guide](https://github.com/Natex-corporation/gamejam3-rage/blob/main/PLAYING.md)
+
+## Understand and contribute
+- [Agent guide](https://github.com/Natex-corporation/gamejam3-rage/blob/main/AGENTS.md)
+- [Build and test](https://github.com/Natex-corporation/gamejam3-rage/blob/main/docs/BUILDING.md)
+- [Architecture](https://github.com/Natex-corporation/gamejam3-rage/blob/main/docs/ARCHITECTURE.md)
+- [Progression](https://github.com/Natex-corporation/gamejam3-rage/blob/main/docs/PROGRESSION.md)
+- [License scope](https://github.com/Natex-corporation/gamejam3-rage/blob/main/THIRD_PARTY_NOTICES.md)
+- [Report an issue](https://github.com/Natex-corporation/gamejam3-rage/issues)

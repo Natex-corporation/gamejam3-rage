@@ -78,6 +78,14 @@ internal static class PatchAssembly
                 triggerIL.InsertBefore(triggerEntry, triggerIL.Create(OpCodes.Call, Import(game, course, "TryAdvance")));
                 triggerIL.InsertBefore(triggerEntry, triggerIL.Create(OpCodes.Brfalse_S, triggerEntry));
                 triggerIL.InsertBefore(triggerEntry, triggerIL.Create(OpCodes.Ret));
+                var stay = new MethodDefinition("OnTriggerStay2D", MethodAttributes.Private | MethodAttributes.HideBySig, game.TypeSystem.Void);
+                stay.Parameters.Add(new ParameterDefinition("collision", ParameterAttributes.None, trigger.Parameters[0].ParameterType));
+                var stayIL = stay.Body.GetILProcessor();
+                stayIL.Emit(OpCodes.Ldarg_1);
+                stayIL.Emit(OpCodes.Call, Import(game, course, "TryAdvance"));
+                stayIL.Emit(OpCodes.Pop);
+                stayIL.Emit(OpCodes.Ret);
+                trigger.DeclaringType.Methods.Add(stay);
 
                 CaptureEnemySpawnInStart(game.GetType("Enemy"));
                 var dialogue = game.GetType("DialogueUIController");
@@ -119,8 +127,41 @@ internal static class PatchAssembly
                 }
 
                 var paused = Import(game, helpers, "get_GameplayPaused");
+                var tricks = menu.MainModule.GetType("RageRefinement.PlayerTricks");
+                var controllerStart = Method(game.GetType("PlayerController"), "Awake");
+                var controllerIL = controllerStart.Body.GetILProcessor();
+                var controllerReturn = controllerStart.Body.Instructions.Last(instruction => instruction.OpCode == OpCodes.Ret);
+                controllerIL.InsertBefore(controllerReturn, controllerIL.Create(OpCodes.Ldarg_0));
+                controllerIL.InsertBefore(controllerReturn, controllerIL.Create(OpCodes.Call, Import(game, tricks, "Install")));
+                var playerFire = Method(game.GetType("PlayerCombat"), "FireProjectile");
+                var fireIL = playerFire.Body.GetILProcessor();
+                var fireEntry = playerFire.Body.Instructions[0];
+                fireIL.InsertBefore(fireEntry, fireIL.Create(OpCodes.Ldarg_1));
+                fireIL.InsertBefore(fireEntry, fireIL.Create(OpCodes.Call, Import(game, tricks, "PrepareProjectile")));
+                fireIL.InsertBefore(fireEntry, fireIL.Create(OpCodes.Starg, playerFire.Parameters[0]));
                 Guard(damage, paused);
                 var projectile = game.GetType("Projectile");
+                var projectileTricks = menu.MainModule.GetType("RageRefinement.ProjectileTricks");
+                var launch = Method(projectile, "Launch");
+                var launchIL = launch.Body.GetILProcessor();
+                foreach (var ret in launch.Body.Instructions.Where(instruction => instruction.OpCode == OpCodes.Ret).ToArray())
+                {
+                    launchIL.InsertBefore(ret, launchIL.Create(OpCodes.Ldarg_0));
+                    launchIL.InsertBefore(ret, launchIL.Create(OpCodes.Ldarg_1));
+                    launchIL.InsertBefore(ret, launchIL.Create(OpCodes.Ldarg_2));
+                    launchIL.InsertBefore(ret, launchIL.Create(OpCodes.Ldarg_3));
+                    launchIL.InsertBefore(ret, launchIL.Create(OpCodes.Call, Import(game, projectileTricks, "Launched")));
+                }
+                var projectileHit = Method(projectile, "OnTriggerEnter2D");
+                var bounceIL = projectileHit.Body.GetILProcessor();
+                var bounceEntry = projectileHit.Body.Instructions[0];
+                bounceIL.InsertBefore(bounceEntry, bounceIL.Create(OpCodes.Ldarg_0));
+                bounceIL.InsertBefore(bounceEntry, bounceIL.Create(OpCodes.Ldarg_1));
+                bounceIL.InsertBefore(bounceEntry, bounceIL.Create(OpCodes.Ldarg_0));
+                bounceIL.InsertBefore(bounceEntry, bounceIL.Create(OpCodes.Ldfld, projectile.Fields.Single(field => field.Name == "_groundLayer")));
+                bounceIL.InsertBefore(bounceEntry, bounceIL.Create(OpCodes.Call, Import(game, projectileTricks, "TryBounce")));
+                bounceIL.InsertBefore(bounceEntry, bounceIL.Create(OpCodes.Brfalse_S, bounceEntry));
+                bounceIL.InsertBefore(bounceEntry, bounceIL.Create(OpCodes.Ret));
                 var outsideView = Import(game, menu.MainModule.GetType("RageRefinement.ProjectileBounds"), "IsOutsideView");
                 CullOffscreenProjectile(Method(projectile, "FixedUpdate"), outsideView, Method(projectile, "Despawn"));
                 // Physics may cross the edge and trigger a hit in the same step.

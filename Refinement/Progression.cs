@@ -12,19 +12,20 @@ namespace RageRefinement
         {
             public int version = 1;
             public int clay;
-            public int[] ranks = new int[4];
+            public int[] ranks = new int[8];
             public int attempts;
             public int victories;
             public bool storySeen;
+            public int unlockedDistrict;
         }
 
-        public static readonly string[] Names = { "Stronger kicks", "More hearts", "Clay shell", "Second wind" };
-        public static readonly int[] Limits = { 8, 6, 4, 3 };
-        private static readonly int[] BaseCosts = { 12, 16, 24, 28 };
+        public static readonly string[] Names = { "Stronger kicks", "More hearts", "Clay shell", "Second wind", "Clay dash", "Ricochet", "Forked shots", "Rhythm punch" };
+        public static readonly int[] Limits = { 8, 6, 4, 3, 3, 2, 2, 3 };
+        private static readonly int[] BaseCosts = { 20, 24, 32, 40, 45, 60, 80, 70 };
         private static readonly List<Health> enemies = new List<Health>();
         private static readonly HashSet<Health> rewarded = new HashSet<Health>();
         private static SaveData save;
-        private static int[] activeRanks = new int[4];
+        private static int[] activeRanks = new int[8];
         private static float started;
         private static bool fought;
         private static int shields;
@@ -37,6 +38,7 @@ namespace RageRefinement
         public static int Clay { get { EnsureLoaded(); return save.clay; } }
         public static int Attempts { get { EnsureLoaded(); return save.attempts; } }
         public static bool StorySeen { get { EnsureLoaded(); return save.storySeen; } }
+        public static int UnlockedDistrict { get { EnsureLoaded(); return save.unlockedDistrict; } }
         public static int Shields { get { return shields; } }
         public static event Action Changed;
 
@@ -59,11 +61,13 @@ namespace RageRefinement
             try
             {
                 var value = JsonUtility.FromJson<SaveData>(text);
-                if (value == null || value.version != 1 || value.ranks == null || value.ranks.Length != 4) return null;
+                if (value == null || value.version != 1 || value.ranks == null || value.ranks.Length < 4 || value.ranks.Length > 8) return null;
+                if (value.ranks.Length != 8) Array.Resize(ref value.ranks,8);
                 value.clay = Mathf.Clamp(value.clay, 0, 1000000000);
                 value.attempts = Mathf.Max(0, value.attempts);
                 value.victories = Mathf.Max(0, value.victories);
-                for (int index = 0; index < 4; index++) value.ranks[index] = Mathf.Clamp(value.ranks[index], 0, Limits[index]);
+                value.unlockedDistrict = Mathf.Clamp(value.unlockedDistrict,0,Course.StageCount - 1);
+                for (int index = 0; index < 8; index++) value.ranks[index] = Mathf.Clamp(value.ranks[index], 0, Limits[index]);
                 return value;
             }
             catch (ArgumentException) { return null; }
@@ -85,17 +89,18 @@ namespace RageRefinement
         }
 
         private static void Notify() { if (Changed != null) Changed(); }
-        public static int Rank(int index) { EnsureLoaded(); return index >= 0 && index < 4 ? save.ranks[index] : 0; }
+        public static int Rank(int index) { EnsureLoaded(); return index >= 0 && index < 8 ? save.ranks[index] : 0; }
+        public static int ActiveRank(int index) { return index >= 0 && index < 8 ? Active(index) : 0; }
         private static int Active(int index) { return RunActive ? activeRanks[index] : Rank(index); }
         public static int Cost(int index)
         {
-            if (index < 0 || index >= 4 || Rank(index) >= Limits[index]) return 0;
+            if (index < 0 || index >= 8 || Rank(index) >= Limits[index]) return 0;
             int rank = Rank(index);
             return BaseCosts[index] + rank * 8 + rank * rank * 4;
         }
         public static bool TryBuy(int index)
         {
-            if (index < 0 || index >= 4 || Rank(index) >= Limits[index]) return false;
+            if (index < 0 || index >= 8 || Rank(index) >= Limits[index]) return false;
             int cost = Cost(index);
             if (save.clay < cost) return false;
             save.clay -= cost;
@@ -113,6 +118,7 @@ namespace RageRefinement
             RunEnded = Won = fought = false;
             RunClay = RunKills = 0;
             shields = activeRanks[2];
+            PlayerTricks.BeginRun();
             started = Time.realtimeSinceStartup;
             save.attempts++;
             Persist();
@@ -150,7 +156,7 @@ namespace RageRefinement
             }
             else if (health.GetComponent<Enemy>() != null)
             {
-                maximum = 8 + Course.Stage * 6;
+                maximum = DemoContent.EnemyHealth[Course.Stage];
                 invincibility = .18f;
             }
         }
@@ -160,6 +166,7 @@ namespace RageRefinement
             if (!RunActive || SceneManager.GetActiveScene().buildIndex != Course.LevelScene) return damage;
             if (target.CompareTag("Player"))
             {
+                if (PlayerTricks.Dashing) { damage.Amount = 0; damage.KnockbackForce = 0; return damage; }
                 if (damage.Amount > 0 && !target.IsInvincible && target.CurrentHealth > 0 && shields > 0)
                 {
                     shields--;
@@ -169,7 +176,15 @@ namespace RageRefinement
                 }
             }
             else if (target.GetComponent<Enemy>() != null && damage.Amount > 0)
+            {
                 damage.Amount += activeRanks[0];
+                if (!target.IsInvincible && target.CurrentHealth > 0) damage.Amount = PlayerTricks.RhythmDamage(damage.Amount);
+                var kind = target.GetComponent<ClayEnemy>();
+                if (kind != null && kind.Kind == ClayEnemyKind.Shieldguard &&
+                    Mathf.Sign(damage.DamageSourcePosition.x - target.transform.position.x) == Mathf.Sign(target.transform.localScale.x))
+                    damage.Amount = Mathf.Max(1,damage.Amount / 2);
+                if (target.GetComponent<KilnKing>() != null) damage.KnockbackForce = 0;
+            }
             return damage;
         }
 
@@ -251,7 +266,12 @@ namespace RageRefinement
                     health.TakeDamage(new DamageData(health.CurrentHealth, Vector2.zero, 0, 0));
         }
 
-        public static void StageCleared() { if (RunActive) Award(25 * (Course.Stage + 1)); }
+        public static void StageCleared()
+        {
+            if (!RunActive) return;
+            save.unlockedDistrict = Mathf.Max(save.unlockedDistrict,Mathf.Min(Course.Stage + 1,Course.StageCount - 1));
+            Award(25 * (Course.Stage + 1));
+        }
 
         public static void HandleDefeat(string ignored)
         {

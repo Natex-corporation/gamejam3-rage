@@ -8,7 +8,7 @@ namespace RageRefinement
     public static class Course
     {
         public const int LevelScene = 2;
-        public const int StageCount = 3;
+        public const int StageCount = 6;
         public static int Stage { get; private set; }
         public static bool Finished { get; private set; }
 
@@ -32,9 +32,9 @@ namespace RageRefinement
             Progression.ConfigureHealth(health, ref maximum, ref invincibility);
         }
 
-        public static void BeginRun()
+        public static void BeginRun(int district = 0)
         {
-            Stage = 0;
+            Stage = Mathf.Clamp(district,0,StageCount - 1);
             checkpointReached = false;
             Finished = false;
             seed = Guid.NewGuid().GetHashCode();
@@ -188,7 +188,7 @@ namespace RageRefinement
             if (entry != null) entry.SetActive(false);
 
             var random = new System.Random(unchecked(seed * 397 ^ Stage));
-            float offset = (Stage == 1 ? 5f : 13f) + Next(random, 0f, 7f);
+            float offset = 5f + (Stage - 1) * 9f + Next(random, 0f, 5f);
             float shelfEdge = shelf.bounds.min.x + offset;
             float shelfHeight = shelf.bounds.max.y;
             float platformTopOffset = sample.bounds.max.y - platform.position.y;
@@ -198,7 +198,17 @@ namespace RageRefinement
             var lowerWall = env.transform.Find("Wall (1)");
             if (lowerWall != null) Shift(lowerWall, offset);
             Shift(endWall, offset);
-            Shift(exit.transform, offset + Next(random, -2f, 2f));
+            Shift(exit.transform, offset);
+            Physics2D.SyncTransforms();
+            var exitCollider = exit.GetComponent<Collider2D>();
+            var endCollider = endWall.GetComponentInChildren<Collider2D>();
+            if (exitCollider != null && endCollider != null)
+            {
+                // Keep enough approach space for the player's body before the solid end wall.
+                float destination = Mathf.Min(exitCollider.bounds.center.x, endCollider.bounds.min.x - 2f);
+                destination = Mathf.Clamp(destination, shelf.bounds.min.x + 5f, shelf.bounds.max.x - 2f);
+                exit.transform.position += Vector3.right * (destination - exitCollider.bounds.center.x);
+            }
 
             // Replace the authored approach with steps of bounded height and span.
             // The flat lower road stays open, so a missed jump drops onto a retry route.
@@ -210,7 +220,7 @@ namespace RageRefinement
 
             var stairs = new GameObject("Generated clay steps").transform;
             stairs.SetParent(env.transform, false);
-            int stepCount = Stage + random.Next(3, 5);
+            int stepCount = 5 + Stage;
             float nextX = shelfEdge - 2.8f;
             for (int index = stepCount; index > 0; index--)
             {
@@ -225,7 +235,7 @@ namespace RageRefinement
                 nextX -= Next(random, 5.4f, 5.8f);
             }
 
-            int lowerCount = Stage == 1 ? 1 : 2;
+            int lowerCount = 2;
             int upperCount = Stage == 1 ? 3 : 4;
             var lower = new System.Collections.Generic.List<Transform>();
             var upper = new System.Collections.Generic.List<Transform>();

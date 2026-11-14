@@ -11,3 +11,13 @@ Use case: stylized-concept. Asset type: production game UI nine-slice sprite atl
 ```
 
 The returned atlas is 1254×1254; the loader divides its actual dimensions into equal cells rather than assuming the requested resolution. No font or original game art is embedded in it. All text remains live, localized UI text.
+
+## Kiln King boss
+
+`assets/kiln-king.png` is project-owned artwork generated with the built-in ImageGen tool. It retains transparency and is shared under MIT. `DemoContent.LoadSprite` uses a bottom-center pivot and scales the image to 4.8 world units high. Its original clay texture is preserved; the runtime adds a small stepped wobble and hit flash.
+
+Exact generation prompt:
+
+```text
+Use case: stylized-concept. Asset type: single production 2D game boss sprite, transparent PNG. Create a full body front-facing stop-motion plasticine character called the Kiln King, for a handmade clay platformer with photographed clay houses and little clay figures. A chunky terracotta-orange kiln creature with a rounded pot-bellied body, stubby thick feet, broad soft mitten fists held low at his sides, a small lumpy three-point ochre crown made of clay, a warm glowing cream-orange furnace-mouth inset in his belly, two large expressive dark coal eyes with small cream glints and furrowed brows. Grumpy, humorous and formidable, suitable for a playful village game, no horror. Clearly hand kneaded colored plasticine with fingerprint texture, small dents and imperfect sculpted edges; soft studio lighting from upper left. Orthographic flat straight-on view, both feet on the same ground baseline near bottom, entire character including crown and hands visible with transparent margin on all sides, centered, fills 85 percent of canvas. Clearly separated silhouette for readable collision shape. No ground, no scenery, no text, no letters, no logo, no watermark, no checkerboard, no large cast shadow. One character only, one pose, no sprite sheet. Wide oval body and squat proportions, roughly 1.1 times as tall as wide.
+```
