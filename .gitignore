@@ -1,0 +1,24 @@
+# Built Unity player, third-party libraries and local backups stay local.
+/*
+!/.gitignore
+!/.gitattributes
+!/.editorconfig
+!/README.md
+!/LICENSE
+!/THIRD_PARTY_NOTICES.md
+!/CONTRIBUTING.md
+!/CHANGELOG.md
+!/Refinement/
+!/scripts/
+!/docs/
+!/.github/
+/Refinement/*/
+**/bin/
+**/obj/
+*.user
+*.log
+*.dll
+*.exe
+*.zip
+*.nupkg
+__pycache__/

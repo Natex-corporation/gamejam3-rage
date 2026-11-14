@@ -1,0 +1,11 @@
+name: Feature request
+description: Suggest a focused improvement.
+title: "[Idea] "
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you improve?
+      description: Describe the player problem and the behavior you would like.
+    validations:
+      required: true

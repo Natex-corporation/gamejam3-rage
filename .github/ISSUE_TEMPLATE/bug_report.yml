@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a gameplay, menu, translation, or build problem.
+title: "[Bug] "
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How can we reproduce it?
+      description: Include the scene or stage and exact steps.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Setup
+      description: Windows version, resolution, language, and keyboard or controller.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or relevant error
+      description: Remove personal paths and unrelated information from logs.

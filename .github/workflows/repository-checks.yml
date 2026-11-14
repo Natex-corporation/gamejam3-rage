@@ -1,0 +1,24 @@
+name: Repository checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  source-hygiene:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate PowerShell syntax
+        shell: pwsh
+        run: |
+          $failures = @()
+          Get-ChildItem scripts -Filter '*.ps1' | ForEach-Object {
+            $parseErrors = $null
+            $tokens = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            $failures += @($parseErrors)
+          }
+          if ($failures.Count) { $failures | Write-Error; exit 1 }
+      - name: Check documentation links and source-only checkout
+        shell: pwsh
+        run: |
+          python scripts/check_repository.py
